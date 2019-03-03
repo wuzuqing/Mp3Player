@@ -76,7 +76,7 @@ public class RangeInfo {
 
     public void init(String name, int index, MediaType mediaType) {
         this.index = index;
-        setFrom(index * mediaType.getOneFileTotalSize(), mediaType.getOneFileTotalSize());
+        setFrom(index * mediaType.getOneFileTotalSize()+index, mediaType.getOneFileTotalSize());
         fileName = name.replace("over", String.format(Locale.getDefault(), "%d_%d", index, mediaType.getOneFileCacheSecond()));
         preDefectFileName = name.replace("over", String.format(Locale.getDefault(), "preDefect_%d_%d", index, mediaType.getOneFileCacheSecond()));
     }

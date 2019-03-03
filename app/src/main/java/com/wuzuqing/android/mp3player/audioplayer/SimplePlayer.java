@@ -20,7 +20,8 @@ import java.util.Locale;
  * 说明：
  */
 public class SimplePlayer implements MediaPlayer.OnCompletionListener, MediaPlayer.OnPreparedListener, MediaPlayer.OnInfoListener, MediaPlayer.OnErrorListener {
-    private MediaPlayer vMediaPlayer;
+    private MediaPlayer vCurrentMediaPlayer;
+    private MediaPlayer vNextMediaPlayer;
     private String lastUrl;
     private boolean isPrepared;
     private int seekToPos;
@@ -33,20 +34,29 @@ public class SimplePlayer implements MediaPlayer.OnCompletionListener, MediaPlay
 
 
     private void initPlayer() {
-        if (vMediaPlayer == null) {
-            vMediaPlayer = new MediaPlayer();
-            vMediaPlayer.setOnCompletionListener(this);
-            vMediaPlayer.setOnPreparedListener(this);
-//            vMediaPlayer.setOnInfoListener(this);
+        if (vCurrentMediaPlayer == null) {
+            vCurrentMediaPlayer = new MediaPlayer();
+            vCurrentMediaPlayer.setOnCompletionListener(this);
+            vCurrentMediaPlayer.setOnPreparedListener(this);
+            vCurrentMediaPlayer.setOnErrorListener(this);
+            vCurrentMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        }
+    }
 
-            vMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+    private void initNextPlayer() {
+        if (vNextMediaPlayer == null) {
+            vNextMediaPlayer = new MediaPlayer();
+            vNextMediaPlayer.setOnCompletionListener(this);
+            vNextMediaPlayer.setOnPreparedListener(this);
+            vCurrentMediaPlayer.setOnErrorListener(this);
+            vNextMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         }
     }
 
 
     public void resume() {
         if (isPrepared) {
-            vMediaPlayer.start();
+            vCurrentMediaPlayer.start();
             vHandler.removeCallbacksAndMessages(null);
             vHandler.sendEmptyMessage(0);
         }
@@ -55,16 +65,16 @@ public class SimplePlayer implements MediaPlayer.OnCompletionListener, MediaPlay
 
     public void pause() {
         if (isPrepared) {
-            vMediaPlayer.pause();
+            vCurrentMediaPlayer.pause();
             vHandler.removeCallbacksAndMessages(null);
         }
     }
 
     public void stop() {
-        if (vMediaPlayer != null && isPrepared) {
+        if (vCurrentMediaPlayer != null && isPrepared) {
             LogUtils.d("stop: " + currentIndex + " / " + vAudioInfo.getSplitCount() + " isPrepared:" + isPrepared);
-            vMediaPlayer.stop();
-            vMediaPlayer.reset();
+            vCurrentMediaPlayer.stop();
+            vCurrentMediaPlayer.reset();
             isPrepared = false;
             vHandler.removeCallbacksAndMessages(null);
         }
@@ -84,7 +94,7 @@ public class SimplePlayer implements MediaPlayer.OnCompletionListener, MediaPlay
     public void seekToWithOffset(boolean isAdd, int offset) {
         LogUtils.d("seekToWithOffset:" + offset);
         if (isPrepared) {
-            int currentPosition = vMediaPlayer.getCurrentPosition();
+            int currentPosition = vCurrentMediaPlayer.getCurrentPosition();
             int realPosition = currentIndex * vAudioInfo.getMediaType().getOneFileCacheSecond() * 1000 + currentPosition;
             if (isAdd) {
                 realPosition += offset;
@@ -99,14 +109,22 @@ public class SimplePlayer implements MediaPlayer.OnCompletionListener, MediaPlay
     }
 
 
-    private void start(String url) {
-        initPlayer();
+    private void start(String url, boolean isCurrent) {
+        if (isCurrent) {
+            initPlayer();
+        } else {
+            initNextPlayer();
+        }
         try {
             LogUtils.d("start setDataSource:");
-            vMediaPlayer.setDataSource(url);
-            vMediaPlayer.setOnErrorListener(this);
-            vMediaPlayer.prepareAsync();
-            lastUrl = url;
+            if (isCurrent) {
+                vCurrentMediaPlayer.setDataSource(url);
+                vCurrentMediaPlayer.prepareAsync();
+                lastUrl = url;
+            } else {
+                vNextMediaPlayer.setDataSource(url);
+                vNextMediaPlayer.prepareAsync();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -132,9 +150,16 @@ public class SimplePlayer implements MediaPlayer.OnCompletionListener, MediaPlay
 
     @Override
     public boolean onError(MediaPlayer mp, int what, int extra) {
-//        if (extra==MediaPlayer. MEDIA_ERROR_IO){
-//        }
-        LogUtils.d("onError"+mp.getCurrentPosition() + "/"+mp.getDuration());
+
+        int second = (mp.getCurrentPosition()) / 1000;
+        if (second > 175) {
+            if (hasNextPrepared) {
+                playNext();
+            } else {
+
+            }
+        }
+        LogUtils.d(" what:" + what + " extra:" + extra + " second:" + second + " hasNextDownloadFinishFile:" + hasNextDownloadFinishFile);
         return true;
     }
 
@@ -199,6 +224,7 @@ public class SimplePlayer implements MediaPlayer.OnCompletionListener, MediaPlay
         @Override
         public void onFinish(AudioInfo audioInfo, RangeInfo rangeInfo) {
             hasNextDownloadFinishFile = true;
+            start(AudioCacheDownload.getInstance().getRangeInfoFileName(rangeInfo), false);
         }
 
         @Override
@@ -212,16 +238,16 @@ public class SimplePlayer implements MediaPlayer.OnCompletionListener, MediaPlay
         this.seekToPos = toPos;
         if (url != null && url.equals(lastUrl)) {
             if (isPrepared) {
-                playerSeekTo(vMediaPlayer);
-                vMediaPlayer.start();
+                playerSeekTo(vCurrentMediaPlayer);
+                vCurrentMediaPlayer.start();
                 vHandler.removeCallbacksAndMessages(null);
                 vHandler.sendEmptyMessage(0);
             } else {
-                start(url);
+                start(url, true);
             }
         } else {
             stop();
-            start(url);
+            start(url, true);
         }
     }
 
@@ -237,8 +263,8 @@ public class SimplePlayer implements MediaPlayer.OnCompletionListener, MediaPlay
 
     private void updatePos() {
         AudioInfo audioInfo = vAudioInfo;
-        if (vMediaPlayer != null && isPrepared && vMediaPlayer.isPlaying()) {
-            int currentPosition = vMediaPlayer.getCurrentPosition();
+        if (vCurrentMediaPlayer != null && isPrepared && vCurrentMediaPlayer.isPlaying()) {
+            int currentPosition = vCurrentMediaPlayer.getCurrentPosition();
             int realPosition = currentIndex * audioInfo.getMediaType().getOneFileCacheSecond() * 1000 + currentPosition;
             if (!isTouchSeekBar) {
                 if (vSeekBar != null) {
@@ -249,12 +275,13 @@ public class SimplePlayer implements MediaPlayer.OnCompletionListener, MediaPlay
                 vCurrentTextView.setText(posToTimeStr(realPosition));
                 vTotalTextView.setText(posToTimeStr(audioInfo.getDuration()));
             }
-            checkNeedDownload(audioInfo, currentPosition, vMediaPlayer.getDuration());
+            checkNeedDownload(audioInfo, currentPosition, vCurrentMediaPlayer.getDuration());
         }
     }
 
     private boolean hasDownloadNext;
     private boolean hasNextDownloadFinishFile = false;
+    private boolean hasNextPrepared = false;
 
     private void checkNeedDownload(AudioInfo audioInfo, int position, int duration) {
         if (currentIndex == audioInfo.getSplitCount() - 1) {
@@ -265,6 +292,7 @@ public class SimplePlayer implements MediaPlayer.OnCompletionListener, MediaPlay
             hasDownloadNext = true;
             int nextIndex = currentIndex + 1;
             hasNextDownloadFinishFile = false;
+            hasNextPrepared = false;
             download(nextIndex, vOnAudioFileDownloadNextListener);
         }
     }
@@ -286,19 +314,20 @@ public class SimplePlayer implements MediaPlayer.OnCompletionListener, MediaPlay
 
     @Override
     public void onPrepared(MediaPlayer mp) {
-        if (hasNextDownloadFinishFile){
-            currentIndex++;
-            RangeInfo rangeInfo = vAudioInfo.geRangeInfo(currentIndex);
-            startWithOffset(AudioCacheDownload.getInstance().getRangeInfoFileName(rangeInfo), -1);
-            hasNextDownloadFinishFile = false;
-            hasDownloadNext = false;
-        }else{
+        if (mp == vNextMediaPlayer) {
+            hasNextPrepared = true;
+            LogUtils.d("onPrepared vNextMediaPlayer:");
+            return;
+        }
+        if (hasNextDownloadFinishFile) {
+            playNext();
+        } else {
             isPrepared = true;
             playerSeekTo(mp);
             mp.start();
             vHandler.removeCallbacksAndMessages(null);
             vHandler.sendEmptyMessage(999);
-            LogUtils.d("onPrepared: lastUrl:" + lastUrl + " duration: " + mp.getDuration() + " seekToPos:" + seekToPos );
+            LogUtils.d("onPrepared: lastUrl:" + lastUrl + " duration: " + mp.getDuration() + " seekToPos:" + seekToPos);
         }
     }
 
@@ -306,19 +335,32 @@ public class SimplePlayer implements MediaPlayer.OnCompletionListener, MediaPlay
     public void onCompletion(MediaPlayer mp) {
         LogUtils.d("onCompletion: " + currentIndex + " / " + vAudioInfo.getSplitCount());
         stop();
-        if (hasNextDownloadFinishFile) {
-            currentIndex++;
-            RangeInfo rangeInfo = vAudioInfo.geRangeInfo(currentIndex);
-            startWithOffset(AudioCacheDownload.getInstance().getRangeInfoFileName(rangeInfo), -1);
-            hasNextDownloadFinishFile = false;
-            hasDownloadNext = false;
+        if (hasNextPrepared) {
+            playNext();
+        } else if (hasNextDownloadFinishFile) {
+
         } else if (currentIndex != vAudioInfo.getSplitCount() - 1 && !hasDownloadNext) {
             currentIndex++;
-
             AudioCacheDownload.getInstance().download(vAudioInfo, currentIndex, vOnAudioFileDownloadNextListener);
         } else {
             isLoadEnd = true;
         }
+    }
+
+    private void playNext() {
+        currentIndex++;
+        hasNextPrepared = false;
+        LogUtils.d("playNext:"+vCurrentMediaPlayer + " / "+vNextMediaPlayer);
+        stop();
+        MediaPlayer temp = vCurrentMediaPlayer;
+        vCurrentMediaPlayer = vNextMediaPlayer;
+        vCurrentMediaPlayer.start();
+        vNextMediaPlayer = temp;
+        isPrepared = true;
+        vHandler.removeCallbacksAndMessages(null);
+        vHandler.sendEmptyMessage(999);
+        hasNextDownloadFinishFile = false;
+        hasDownloadNext = false;
     }
 
     private boolean isTouchSeekBar;

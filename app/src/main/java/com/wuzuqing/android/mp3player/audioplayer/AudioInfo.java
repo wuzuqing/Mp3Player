@@ -139,7 +139,7 @@ public class AudioInfo {
                 '}';
     }
 
-    public RangeInfo geRangeInfo(int index) {
+    public RangeInfo getRangeInfo(int index) {
         return rangeInfoList.get(index);
     }
 }

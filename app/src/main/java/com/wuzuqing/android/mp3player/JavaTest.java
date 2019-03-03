@@ -4,10 +4,13 @@ import com.wuzuqing.android.mp3player.audioplayer.AudioCache;
 import com.wuzuqing.android.mp3player.audioplayer.AudioCacheDownload;
 import com.wuzuqing.android.mp3player.audioplayer.AudioError;
 import com.wuzuqing.android.mp3player.audioplayer.AudioInfo;
+import com.wuzuqing.android.mp3player.audioplayer.LogUtils;
 import com.wuzuqing.android.mp3player.audioplayer.OnAudioFileDownloadListener;
 import com.wuzuqing.android.mp3player.audioplayer.RangeInfo;
 
 import java.io.File;
+import java.util.Collections;
+import java.util.LinkedList;
 
 /**
  * 作者：士元
@@ -37,9 +40,17 @@ public class JavaTest {
             }
         };
 //        download.download(audioInfo, index, finishListener);
+        LinkedList<Integer> indexs = new LinkedList<>();
         for (int i = 0; i < splitCount; i++) {
-            download.download(audioInfo, i, finishListener);
-            Thread.sleep(20);
+            indexs.add(i);
+//            download.download(audioInfo, i, finishListener);
+//            Thread.sleep(20);
+        }
+        Collections.shuffle(indexs);
+        LogUtils.d(indexs.toString());
+        while (!indexs.isEmpty()) {
+            download.download(audioInfo, indexs.removeFirst(), finishListener);
+            Thread.sleep(200);
         }
     }
 }
