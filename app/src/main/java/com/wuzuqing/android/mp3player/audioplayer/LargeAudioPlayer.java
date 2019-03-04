@@ -61,8 +61,6 @@ public class LargeAudioPlayer implements IPlayer {
             stop();
             if (hasNextPrepared) {
                 playNext();
-            } else if (hasNextDownloadFinishFile) {
-
             } else if (currentIndex != vAudioInfo.getSplitCount() - 1 && !hasDownloadNext) {
                 currentIndex++;
                 AudioCacheDownload.getInstance().download(vAudioInfo, currentIndex, vOnAudioFileDownloadNextListener);
@@ -77,18 +75,22 @@ public class LargeAudioPlayer implements IPlayer {
         @Override
         public void onPrepared(MediaPlayer mp) {
             if (mp == vNextMediaPlayer) {
-                hasNextPrepared = true;
+                if (!isPrepared) {
+                    playNext();
+                } else {
+                    hasNextPrepared = true;
+                }
                 LogUtils.d("onPrepared vNextMediaPlayer:");
                 return;
             }
-            if (hasNextDownloadFinishFile) {
+            if (hasNextPrepared) {
                 playNext();
             } else {
                 isPrepared = true;
                 innerPlayerSeekTo(mp);
                 mp.start();
-                vHandler.removeCallbacksAndMessages(null);
-                vHandler.sendEmptyMessage(999);
+                vPlayState = PlayState.START;
+                resetUpdateProgressHandler();
                 LogUtils.d("onPrepared: lastUrl:" + lastUrl + " duration: " + mp.getDuration() + " seekToPos:" + seekToPos);
             }
         }
@@ -103,7 +105,7 @@ public class LargeAudioPlayer implements IPlayer {
                     playNext();
                 }
             }
-            LogUtils.d(" what:" + what + " extra:" + extra + " second:" + second + " hasNextDownloadFinishFile:" + hasNextDownloadFinishFile);
+            LogUtils.d(" what:" + what + " extra:" + extra + " second:" + second + " hasNextDownloadFinishFile:" + hasNextDownloadFinishFile + " isPrepared:" + isPrepared);
             return true;
         }
     };
@@ -113,7 +115,7 @@ public class LargeAudioPlayer implements IPlayer {
         if (isPrepared) {
             vCurrentMediaPlayer.start();
             resetUpdateProgressHandler();
-            vPlayState = PlayState.RESTART;
+            vPlayState = PlayState.START;
         }
     }
 
@@ -132,6 +134,7 @@ public class LargeAudioPlayer implements IPlayer {
             vCurrentMediaPlayer.stop();
             vCurrentMediaPlayer.reset();
             isPrepared = false;
+            vPlayState = PlayState.STOP;
             vHandler.removeCallbacksAndMessages(null);
         }
         lastUrl = null;
@@ -162,6 +165,7 @@ public class LargeAudioPlayer implements IPlayer {
             }
             if (hasNextPrepared) {
                 hasNextPrepared = false;
+                hasDownloadNext = false;
                 hasNextDownloadFinishFile = false;
                 vNextMediaPlayer.reset();
             }
@@ -181,6 +185,7 @@ public class LargeAudioPlayer implements IPlayer {
             if (isCurrent) {
                 vCurrentMediaPlayer.reset();
                 vCurrentMediaPlayer.setDataSource(url);
+                vPlayState = PlayState.PREPARE;
                 vCurrentMediaPlayer.prepareAsync();
                 lastUrl = url;
             } else {
@@ -228,7 +233,7 @@ public class LargeAudioPlayer implements IPlayer {
         if (pos == -1) {
             seekToPos = -1;
         } else {
-            double ms = (1000d * audioInfo.getMediaType().getOneFileCacheSecond());
+            float ms = (1000f * audioInfo.getMediaType().getOneFileCacheSecond());
             currentIndex = (int) (pos / ms);
             seekToPos = pos % (int) ms;
         }
@@ -373,6 +378,7 @@ public class LargeAudioPlayer implements IPlayer {
         isPrepared = true;
         hasNextDownloadFinishFile = false;
         hasDownloadNext = false;
+        vPlayState = PlayState.START;
     }
 
     private void resetUpdateProgressHandler() {
