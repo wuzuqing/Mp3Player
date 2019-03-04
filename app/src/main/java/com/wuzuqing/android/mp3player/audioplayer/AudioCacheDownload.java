@@ -74,7 +74,7 @@ public class AudioCacheDownload {
         return new File(cacheFileDir, rangeInfo.getFileName()).getAbsolutePath();
     }
 
-    public void initContentLength(AudioInfo audioInfo) throws IOException {
+    private void initContentLength(AudioInfo audioInfo) throws IOException {
         Response response = buildResponse(audioInfo.getUrl(), 0, 3);
         String contentRange = response.header("Content-Range");
         LogUtils.d("contentRange:" + contentRange);
@@ -166,15 +166,15 @@ public class AudioCacheDownload {
         return -1;
     }
 
-    private int findLastIndex(byte[] bytes, byte[] headBytesStr, int len) {
-        int maxLength = len - headBytesStr.length;
-        for (int length = maxLength; length > 0; length--) {
-            if (check(bytes, length, headBytesStr)) {
-                return length;
-            }
-        }
-        return -1;
-    }
+//    private int findLastIndex(byte[] bytes, byte[] headBytesStr, int len) {
+//        int maxLength = len - headBytesStr.length;
+//        for (int length = maxLength; length > 0; length--) {
+//            if (check(bytes, length, headBytesStr)) {
+//                return length;
+//            }
+//        }
+//        return -1;
+//    }
 
     private boolean check(byte[] bytes, int startIndex, byte[] headBytesStr) {
         for (int i = 0; i < headBytesStr.length; i++) {

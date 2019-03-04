@@ -6,6 +6,7 @@ import com.wuzuqing.android.mp3player.audioplayer.AudioError;
 import com.wuzuqing.android.mp3player.audioplayer.AudioInfo;
 import com.wuzuqing.android.mp3player.audioplayer.LogUtils;
 import com.wuzuqing.android.mp3player.audioplayer.OnAudioFileDownloadListener;
+import com.wuzuqing.android.mp3player.audioplayer.OnAudioFileInitListener;
 import com.wuzuqing.android.mp3player.audioplayer.RangeInfo;
 
 import java.io.File;
@@ -25,7 +26,20 @@ public class JavaTest {
         download.setCacheFileDir(new File("e://test"));
         int index = 7;
         AudioInfo audioInfo = AudioCache.getInstance().getAudioInfo(DataUtils.testUrl);
-        download.initContentLength(audioInfo);
+        download.syncInitContentLength(audioInfo, new OnAudioFileInitListener() {
+            @Override
+            public void onInit(AudioInfo audioInfo) {
+                try {
+                    startWork(download, audioInfo);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+    }
+
+    private static void startWork(AudioCacheDownload download, AudioInfo audioInfo) throws InterruptedException {
         final int splitCount = audioInfo.getSplitCount();
         OnAudioFileDownloadListener finishListener = new OnAudioFileDownloadListener() {
 
