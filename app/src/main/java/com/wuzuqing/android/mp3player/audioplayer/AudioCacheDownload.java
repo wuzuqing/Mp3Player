@@ -18,7 +18,6 @@ import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLSession;
 
 import okhttp3.Call;
-import okhttp3.Callback;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -124,7 +123,6 @@ public class AudioCacheDownload {
         FileOutputStream fileOutputStream = new FileOutputStream(file);
         byte[] bytes = new byte[4096];
         int len = 0;
-        int totalSize = 0;
         if (audioInfo.getMediaType() == MediaType.AAC) {
             int readOneFrame = stream.read(bytes);
             printBytes(bytes);
@@ -141,7 +139,6 @@ public class AudioCacheDownload {
                 preDfFileOutputStream.write(preDf);
                 preDfFileOutputStream.close();
             }
-            totalSize += readOneFrame;
             LogUtils.d("downloadIndex: firstIndex" + firstIndex + " readOneFrame:" + readOneFrame);
         }
 
@@ -151,19 +148,8 @@ public class AudioCacheDownload {
                 printBytes(bytes);
                 index++;
             }
-//            totalSize += len;
-//            if (totalSize == audioInfo.getContentLength()) {
-//                int lastIndex = findLastIndex(bytes, audioInfo.getHeadBytesStr(), len);
-//                if (lastIndex != -1) {
-//                    fileOutputStream.write(bytes, 0, lastIndex - 1);
-//                } else {
-//                }
-//                fileOutputStream.write(bytes, 0, len);
-//            } else {
-//            }
             fileOutputStream.write(bytes, 0, len);
         }
-
         fileOutputStream.flush();
         fileOutputStream.close();
         stream.close();
@@ -219,10 +205,12 @@ public class AudioCacheDownload {
             FileInputStream fileInputStream = null;
             byte[] bytes = new byte[2048];
             int len = 0;
+            File tempFile = null;
             for (int i = 0; i < splitCount; i++) {
                 RangeInfo rangeInfo = infoList.get(i);
                 if (i != 0) {
-                    fileInputStream = new FileInputStream(new File(cacheFileDir, rangeInfo.getPreDefectFileName()));
+                    tempFile =  new File(cacheFileDir, rangeInfo.getPreDefectFileName());
+                    fileInputStream = new FileInputStream(tempFile);
                     while ((len = fileInputStream.read(bytes)) != -1) {
                         randomAccessFile.write(bytes, 0, len);
                     }
@@ -262,9 +250,25 @@ public class AudioCacheDownload {
                     AudioCacheDownload.getInstance().initContentLength(audioInfo);
                 }
                 RangeInfo rangeInfo = audioInfo.getRangeInfoList().get(index);
+                // 提前下载下一个文件
+                int nextIndex = index + 1;
+                RangeInfo nextRangeInfo = null;
+                boolean hasNext = (audioInfo.getMediaType() == MediaType.AAC) && nextIndex < audioInfo.getSplitCount();
+                if (hasNext) {
+                    nextRangeInfo = audioInfo.getRangeInfoList().get(nextIndex);
+                    if (!getInstance().checkFileExists(nextRangeInfo.getFileName())) {
+                        AudioCacheDownload.getInstance().downloadIndex(audioInfo, nextRangeInfo);
+                    }
+                }
                 if (!getInstance().checkFileExists(rangeInfo.getFileName())) {
                     AudioCacheDownload.getInstance().downloadIndex(audioInfo, rangeInfo);
                 }
+
+                //拼接下一个文件
+                if (hasNext) {
+                    getInstance().connectNextFile(rangeInfo, nextRangeInfo);
+                }
+
                 LogUtils.d("download Used: " + (System.currentTimeMillis() - start) + " info:" + rangeInfo);
                 if (listener != null) {
                     listener.onFinish(audioInfo, rangeInfo);
@@ -274,6 +278,25 @@ public class AudioCacheDownload {
                 e.printStackTrace();
             }
         }
+    }
+
+    private void connectNextFile(RangeInfo rangeInfo, RangeInfo nextRangeInfo) throws IOException {
+        File file = new File(getInstance().cacheFileDir, nextRangeInfo.getPreDefectFileName());
+        if (file.exists()) {
+            FileInputStream fileInputStream = new FileInputStream(file);
+            FileOutputStream outputStream = new FileOutputStream(new File(cacheFileDir, rangeInfo.getFileName()), true);
+            int len;
+            byte[] bytes = new byte[512];
+            while ((len = fileInputStream.read(bytes)) != -1) {
+                outputStream.write(bytes, 0, len);
+            }
+            outputStream.flush();
+            outputStream.close();
+            fileInputStream.close();
+            file.delete();
+            LogUtils.d("connectNextFile ok");
+        }
+
     }
 
     private boolean isRunning;
