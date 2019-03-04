@@ -37,8 +37,6 @@ public class SimplePlayer implements MediaPlayer.OnCompletionListener, MediaPlay
             vMediaPlayer = new MediaPlayer();
             vMediaPlayer.setOnCompletionListener(this);
             vMediaPlayer.setOnPreparedListener(this);
-//            vMediaPlayer.setOnInfoListener(this);
-
             vMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         }
     }
