@@ -209,7 +209,7 @@ public class AudioCacheDownload {
             for (int i = 0; i < splitCount; i++) {
                 RangeInfo rangeInfo = infoList.get(i);
                 if (i != 0) {
-                    tempFile =  new File(cacheFileDir, rangeInfo.getPreDefectFileName());
+                    tempFile = new File(cacheFileDir, rangeInfo.getPreDefectFileName());
                     fileInputStream = new FileInputStream(tempFile);
                     while ((len = fileInputStream.read(bytes)) != -1) {
                         randomAccessFile.write(bytes, 0, len);
@@ -256,9 +256,10 @@ public class AudioCacheDownload {
                 boolean hasNext = (audioInfo.getMediaType() == MediaType.AAC) && nextIndex < audioInfo.getSplitCount();
                 if (hasNext) {
                     nextRangeInfo = audioInfo.getRangeInfoList().get(nextIndex);
-                    if (!getInstance().checkFileExists(nextRangeInfo.getFileName())) {
-                        AudioCacheDownload.getInstance().downloadIndex(audioInfo, nextRangeInfo);
-                    }
+                    //是否提前下载下一段文件
+//                    if (!getInstance().checkFileExists(nextRangeInfo.getFileName())) {
+//                        AudioCacheDownload.getInstance().downloadIndex(audioInfo, nextRangeInfo);
+//                    }
                 }
                 if (!getInstance().checkFileExists(rangeInfo.getFileName())) {
                     AudioCacheDownload.getInstance().downloadIndex(audioInfo, rangeInfo);
@@ -323,7 +324,6 @@ public class AudioCacheDownload {
         } else {
             listener.onError(audioInfo, AudioError.UN_SUPER_TYPE);
         }
-
     }
 
 

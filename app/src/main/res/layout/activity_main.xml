@@ -12,14 +12,21 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="网络链接"
-
-        android:text="7456839"
-        />
+        android:text="7456839" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
+
+        <EditText
+            android:id="@+id/et_index"
+            android:gravity="center"
+            android:inputType="number"
+            android:layout_width="0dp"
+            android:text="0"
+            android:layout_height="wrap_content"
+            android:layout_weight="1" />
 
         <Button
             android:layout_width="wrap_content"
@@ -62,6 +69,7 @@
             android:id="@+id/tvCurrentTime"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:text="00:00"
             android:textSize="24sp" />
 
         <TextView
@@ -69,13 +77,15 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="end"
+            android:text="01:30"
             android:textSize="24sp" />
     </FrameLayout>
 
-    <FrameLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp">
+        android:orientation="horizontal"
+        android:layout_marginTop="10dp">
 
         <Button
             android:layout_width="wrap_content"
@@ -89,27 +99,40 @@
             android:layout_gravity="center"
             android:onClick="qianJin"
             android:text="前进15秒" />
+
         <Button
             android:layout_width="wrap_content"
-            android:text="清除日志"
+            android:layout_height="wrap_content"
             android:layout_gravity="end"
             android:onClick="clear"
+            android:text="清除日志" />
+        <Button
+            android:layout_width="60sp"
+            android:text="加速"
+            android:onClick="zjSpeed"
             android:layout_height="wrap_content" />
-    </FrameLayout>
+        <Button
+            android:layout_width="60sp"
+            android:onClick="jsSpeed"
+            android:text="减速"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent">
+
         <LinearLayout
             android:layout_width="match_parent"
+            android:layout_height="match_parent"
             android:orientation="vertical"
-            android:padding="4dp"
-            android:layout_height="match_parent">
+            android:padding="4dp">
+
             <TextView
                 android:id="@+id/log"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:textSize="12sp"
-                />
+                android:textSize="12sp" />
         </LinearLayout>
     </ScrollView>
 
