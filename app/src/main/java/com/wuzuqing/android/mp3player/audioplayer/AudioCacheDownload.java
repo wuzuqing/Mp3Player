@@ -30,7 +30,7 @@ import okhttp3.Response;
  */
 public class AudioCacheDownload {
 
-    private static final boolean PRINT_BYTES = false;
+    private static final boolean PRINT_BYTES = true;
 
     public static boolean isAndroid = true;
     private OkHttpClient mOkHttpClient;
