@@ -13,7 +13,7 @@ import com.wuzuqing.android.mp3player.audioplayer.SimplePlayer;
 public class MainActivity extends AppCompatActivity {
 
     SimplePlayer vSimplePlayer = new SimplePlayer();
-    private EditText vEditText;
+    private EditText vEditText, vEtIndex;
     private SeekBar vSeekBar;
     TextView logView;
 
@@ -25,8 +25,11 @@ public class MainActivity extends AppCompatActivity {
         vSeekBar = findViewById(R.id.seekTo);
         logView = findViewById(R.id.log);
         vSimplePlayer.bindSeekBar(vSeekBar);
-        vEditText.setText(DataUtils.testUrl);
-        vEditText.setSelection(DataUtils.testUrl.length());
+
+        int index = 0;
+        String url = DataUtils.urls[index % DataUtils.urls.length];
+        vEditText.setText(url);
+        vEditText.setSelection(url.length());
         vSimplePlayer.bindTextView((TextView) findViewById(R.id.tvCurrentTime), (TextView) findViewById(R.id.tvTotalTime));
         LogUtils.setvOnLogChangeListener(new LogUtils.OnLogChangeListener() {
             @Override
@@ -42,8 +45,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void start(View view) {
-        String url = vEditText.getText().toString().trim();
+        int index = Integer.valueOf(vEtIndex.getText().toString());
+        String url = DataUtils.urls[index % DataUtils.urls.length];
         vSimplePlayer.playUrl(url);
+        vEditText.setText(url);
+        vEditText.setSelection(url.length());
     }
 
 

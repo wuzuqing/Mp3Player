@@ -7,14 +7,30 @@
     android:orientation="vertical"
     tools:context=".MainActivity">
 
-    <EditText
-        android:id="@+id/et_length"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="网络链接"
+        android:orientation="horizontal"
+        android:layout_height="48dp">
 
-        android:text="7456839"
-        />
+        <EditText
+            android:id="@+id/et_length"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:hint="网络链接"
+            android:text="7456839"
+            />
+        <EditText
+            android:id="@+id/et_index"
+            android:layout_marginStart="8dp"
+            android:background="@color/colorAccent"
+            android:layout_width="60dp"
+            android:layout_height="match_parent"
+            android:hint="索引"
+            android:text="1"
+            />
+    </LinearLayout>
+
 
     <LinearLayout
         android:layout_width="match_parent"
