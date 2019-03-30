@@ -74,7 +74,7 @@ public class AudioCacheDownload {
         return new File(cacheFileDir, rangeInfo.getFileName()).getAbsolutePath();
     }
 
-    public void initContentLength(AudioInfo audioInfo) throws IOException {
+    private void initContentLength(AudioInfo audioInfo) throws IOException {
         Response response = buildResponse(audioInfo.getUrl(), 0, 3);
         String contentRange = response.header("Content-Range");
         LogUtils.d("contentRange:" + contentRange);
@@ -166,15 +166,15 @@ public class AudioCacheDownload {
         return -1;
     }
 
-    private int findLastIndex(byte[] bytes, byte[] headBytesStr, int len) {
-        int maxLength = len - headBytesStr.length;
-        for (int length = maxLength; length > 0; length--) {
-            if (check(bytes, length, headBytesStr)) {
-                return length;
-            }
-        }
-        return -1;
-    }
+//    private int findLastIndex(byte[] bytes, byte[] headBytesStr, int len) {
+//        int maxLength = len - headBytesStr.length;
+//        for (int length = maxLength; length > 0; length--) {
+//            if (check(bytes, length, headBytesStr)) {
+//                return length;
+//            }
+//        }
+//        return -1;
+//    }
 
     private boolean check(byte[] bytes, int startIndex, byte[] headBytesStr) {
         for (int i = 0; i < headBytesStr.length; i++) {
@@ -209,7 +209,7 @@ public class AudioCacheDownload {
             for (int i = 0; i < splitCount; i++) {
                 RangeInfo rangeInfo = infoList.get(i);
                 if (i != 0) {
-                    tempFile =  new File(cacheFileDir, rangeInfo.getPreDefectFileName());
+                    tempFile = new File(cacheFileDir, rangeInfo.getPreDefectFileName());
                     fileInputStream = new FileInputStream(tempFile);
                     while ((len = fileInputStream.read(bytes)) != -1) {
                         randomAccessFile.write(bytes, 0, len);
@@ -256,9 +256,10 @@ public class AudioCacheDownload {
                 boolean hasNext = (audioInfo.getMediaType() == MediaType.AAC) && nextIndex < audioInfo.getSplitCount();
                 if (hasNext) {
                     nextRangeInfo = audioInfo.getRangeInfoList().get(nextIndex);
-                    if (!getInstance().checkFileExists(nextRangeInfo.getFileName())) {
-                        AudioCacheDownload.getInstance().downloadIndex(audioInfo, nextRangeInfo);
-                    }
+                    //是否提前下载下一段文件
+//                    if (!getInstance().checkFileExists(nextRangeInfo.getFileName())) {
+//                        AudioCacheDownload.getInstance().downloadIndex(audioInfo, nextRangeInfo);
+//                    }
                 }
                 if (!getInstance().checkFileExists(rangeInfo.getFileName())) {
                     AudioCacheDownload.getInstance().downloadIndex(audioInfo, rangeInfo);
@@ -323,7 +324,6 @@ public class AudioCacheDownload {
         } else {
             listener.onError(audioInfo, AudioError.UN_SUPER_TYPE);
         }
-
     }
 
 

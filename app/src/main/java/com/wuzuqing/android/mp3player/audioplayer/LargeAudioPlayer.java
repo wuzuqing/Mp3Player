@@ -2,13 +2,13 @@ package com.wuzuqing.android.mp3player.audioplayer;
 
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.media.PlaybackParams;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.widget.SeekBar;
 import android.widget.TextView;
-
-import com.wuzuqing.android.mp3player.DataUtils;
 
 import java.io.IOException;
 import java.util.Locale;
@@ -19,7 +19,7 @@ import java.util.Locale;
  * 邮箱：wuzuqing@linghit.com
  * 说明：
  */
-public class SimplePlayer implements MediaPlayer.OnCompletionListener, MediaPlayer.OnPreparedListener, MediaPlayer.OnInfoListener, MediaPlayer.OnErrorListener {
+public class LargeAudioPlayer implements IPlayer {
     private MediaPlayer vCurrentMediaPlayer;
     private MediaPlayer vNextMediaPlayer;
     private String lastUrl;
@@ -32,13 +32,14 @@ public class SimplePlayer implements MediaPlayer.OnCompletionListener, MediaPlay
     private AudioInfo vAudioInfo;
     private boolean isLoadEnd;
 
+    private PlayState vPlayState = PlayState.NONE;
 
     private void initPlayer() {
         if (vCurrentMediaPlayer == null) {
             vCurrentMediaPlayer = new MediaPlayer();
-            vCurrentMediaPlayer.setOnCompletionListener(this);
-            vCurrentMediaPlayer.setOnPreparedListener(this);
-            vCurrentMediaPlayer.setOnErrorListener(this);
+            vCurrentMediaPlayer.setOnCompletionListener(vOnCompletionListener);
+            vCurrentMediaPlayer.setOnPreparedListener(vOnPreparedListener);
+            vCurrentMediaPlayer.setOnErrorListener(vOnErrorListener);
             vCurrentMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         }
     }
@@ -46,25 +47,82 @@ public class SimplePlayer implements MediaPlayer.OnCompletionListener, MediaPlay
     private void initNextPlayer() {
         if (vNextMediaPlayer == null) {
             vNextMediaPlayer = new MediaPlayer();
-            vNextMediaPlayer.setOnCompletionListener(this);
-            vNextMediaPlayer.setOnPreparedListener(this);
-            vCurrentMediaPlayer.setOnErrorListener(this);
+            vNextMediaPlayer.setOnCompletionListener(vOnCompletionListener);
+            vNextMediaPlayer.setOnPreparedListener(vOnPreparedListener);
+            vCurrentMediaPlayer.setOnErrorListener(vOnErrorListener);
             vNextMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         }
     }
+
+    private MediaPlayer.OnCompletionListener vOnCompletionListener = new MediaPlayer.OnCompletionListener() {
+        @Override
+        public void onCompletion(MediaPlayer mp) {
+            LogUtils.d("onCompletion: " + currentIndex + " / " + vAudioInfo.getSplitCount());
+            stop();
+            if (hasNextPrepared) {
+                playNext();
+            } else if (currentIndex != vAudioInfo.getSplitCount() - 1 && !hasDownloadNext) {
+                currentIndex++;
+                AudioCacheDownload.getInstance().download(vAudioInfo, currentIndex, vOnAudioFileDownloadNextListener);
+            } else {
+                isLoadEnd = true;
+            }
+        }
+    };
+
+    private MediaPlayer.OnPreparedListener vOnPreparedListener = new MediaPlayer.OnPreparedListener() {
+
+        @Override
+        public void onPrepared(MediaPlayer mp) {
+            if (mp == vNextMediaPlayer) {
+                if (!isPrepared) {
+                    playNext();
+                } else {
+                    hasNextPrepared = true;
+                }
+                LogUtils.d("onPrepared vNextMediaPlayer:");
+                return;
+            }
+            if (hasNextPrepared) {
+                playNext();
+            } else {
+                isPrepared = true;
+                innerPlayerSeekTo(mp);
+                mp.start();
+                vPlayState = PlayState.START;
+                resetUpdateProgressHandler();
+                LogUtils.d("onPrepared: lastUrl:" + lastUrl + " duration: " + mp.getDuration() + " seekToPos:" + seekToPos);
+            }
+        }
+    };
+
+    private MediaPlayer.OnErrorListener vOnErrorListener = new MediaPlayer.OnErrorListener() {
+        @Override
+        public boolean onError(MediaPlayer mp, int what, int extra) {
+            int second = (mp.getCurrentPosition()) / 1000;
+            if (second > 175) {
+                if (hasNextPrepared) {
+                    playNext();
+                }
+            }
+            LogUtils.d(" what:" + what + " extra:" + extra + " second:" + second + " hasNextDownloadFinishFile:" + hasNextDownloadFinishFile + " isPrepared:" + isPrepared);
+            return true;
+        }
+    };
 
 
     public void resume() {
         if (isPrepared) {
             vCurrentMediaPlayer.start();
-            vHandler.removeCallbacksAndMessages(null);
-            vHandler.sendEmptyMessage(0);
+            resetUpdateProgressHandler();
+            vPlayState = PlayState.START;
         }
     }
 
 
     public void pause() {
         if (isPrepared) {
+            vPlayState = PlayState.PAUSE;
             vCurrentMediaPlayer.pause();
             vHandler.removeCallbacksAndMessages(null);
         }
@@ -76,6 +134,7 @@ public class SimplePlayer implements MediaPlayer.OnCompletionListener, MediaPlay
             vCurrentMediaPlayer.stop();
             vCurrentMediaPlayer.reset();
             isPrepared = false;
+            vPlayState = PlayState.STOP;
             vHandler.removeCallbacksAndMessages(null);
         }
         lastUrl = null;
@@ -104,24 +163,33 @@ public class SimplePlayer implements MediaPlayer.OnCompletionListener, MediaPlay
                 realPosition -= offset;
                 realPosition = realPosition < 0 ? 0 : realPosition;
             }
-            startToDownload(realPosition, vAudioInfo);
+            if (hasNextPrepared) {
+                hasNextPrepared = false;
+                hasDownloadNext = false;
+                hasNextDownloadFinishFile = false;
+                vNextMediaPlayer.reset();
+            }
+            innerStartToDownload(realPosition, vAudioInfo);
         }
     }
 
 
-    private void start(String url, boolean isCurrent) {
+    private void innerStart(String url, boolean isCurrent) {
         if (isCurrent) {
             initPlayer();
         } else {
             initNextPlayer();
         }
         try {
-            LogUtils.d("start setDataSource:");
+            LogUtils.d("innerStart setDataSource:");
             if (isCurrent) {
+                vCurrentMediaPlayer.reset();
                 vCurrentMediaPlayer.setDataSource(url);
+                vPlayState = PlayState.PREPARE;
                 vCurrentMediaPlayer.prepareAsync();
                 lastUrl = url;
             } else {
+                vNextMediaPlayer.reset();
                 vNextMediaPlayer.setDataSource(url);
                 vNextMediaPlayer.prepareAsync();
             }
@@ -134,63 +202,42 @@ public class SimplePlayer implements MediaPlayer.OnCompletionListener, MediaPlay
     /**
      * 播放器移动位置
      *
-     * @param mp
+     * @param mp 需要移动的播放器
      */
-    private void playerSeekTo(MediaPlayer mp) {
+    private void innerPlayerSeekTo(MediaPlayer mp) {
         if (seekToPos != -1) {
             mp.seekTo(seekToPos);
             seekToPos = -1;
         }
     }
 
-    @Override
-    public boolean onInfo(MediaPlayer mp, int what, int extra) {
-        return false;
-    }
-
-    @Override
-    public boolean onError(MediaPlayer mp, int what, int extra) {
-
-        int second = (mp.getCurrentPosition()) / 1000;
-        if (second > 175) {
-            if (hasNextPrepared) {
-                playNext();
-            } else {
-
-            }
-        }
-        LogUtils.d(" what:" + what + " extra:" + extra + " second:" + second + " hasNextDownloadFinishFile:" + hasNextDownloadFinishFile);
-        return true;
-    }
-
     /**
-     * @param url
+     * @param url 网络音频链接
      * @param pos 秒
      */
     public void playWithPos(String url, final int pos) {
         this.touchToPos = pos;
 
+        this.vAudioInfo = AudioCache.getInstance().getAudioInfo(url);
         LogUtils.d("playWithPos:" + pos);
-        AudioInfo audioInfo = AudioCache.getInstance().getAudioInfo(url);
-        if (!audioInfo.isInit()) {
+        if (!vAudioInfo.isInit()) {
             //初始化
-            AudioCacheDownload.getInstance().syncInitContentLength(audioInfo, vAudioFileInitListener);
+            AudioCacheDownload.getInstance().syncInitContentLength(vAudioInfo, vAudioFileInitListener);
         } else {
             //开始下载
-            startToDownload(pos, audioInfo);
+            innerStartToDownload(pos, vAudioInfo);
         }
     }
 
-    private void startToDownload(int pos, AudioInfo audioInfo) {
-        this.vAudioInfo = audioInfo;
+    private void innerStartToDownload(int pos, AudioInfo audioInfo) {
         if (pos == -1) {
             seekToPos = -1;
         } else {
-            double ms = (1000d * audioInfo.getMediaType().getOneFileCacheSecond());
+            float ms = (1000f * audioInfo.getMediaType().getOneFileCacheSecond());
             currentIndex = (int) (pos / ms);
             seekToPos = pos % (int) ms;
         }
-        LogUtils.d(" startToDownload seekToPos:" + seekToPos + " pos:" + pos + " currentIndex:" + currentIndex);
+        LogUtils.d(" innerStartToDownload seekToPos:" + seekToPos + " pos:" + pos + " currentIndex:" + currentIndex);
         download(currentIndex, vOnAudioFileDownloadListener);
     }
 
@@ -198,7 +245,7 @@ public class SimplePlayer implements MediaPlayer.OnCompletionListener, MediaPlay
     private OnAudioFileInitListener vAudioFileInitListener = new OnAudioFileInitListener() {
         @Override
         public void onInit(AudioInfo audioInfo) {
-            startToDownload(touchToPos, audioInfo);
+            innerStartToDownload(touchToPos, audioInfo);
         }
     };
 
@@ -224,7 +271,7 @@ public class SimplePlayer implements MediaPlayer.OnCompletionListener, MediaPlay
         @Override
         public void onFinish(AudioInfo audioInfo, RangeInfo rangeInfo) {
             hasNextDownloadFinishFile = true;
-            start(AudioCacheDownload.getInstance().getRangeInfoFileName(rangeInfo), false);
+            innerStart(AudioCacheDownload.getInstance().getRangeInfoFileName(rangeInfo), false);
         }
 
         @Override
@@ -238,16 +285,15 @@ public class SimplePlayer implements MediaPlayer.OnCompletionListener, MediaPlay
         this.seekToPos = toPos;
         if (url != null && url.equals(lastUrl)) {
             if (isPrepared) {
-                playerSeekTo(vCurrentMediaPlayer);
+                innerPlayerSeekTo(vCurrentMediaPlayer);
                 vCurrentMediaPlayer.start();
-                vHandler.removeCallbacksAndMessages(null);
-                vHandler.sendEmptyMessage(0);
+                resetUpdateProgressHandler();
             } else {
-                start(url, true);
+                innerStart(url, true);
             }
         } else {
             stop();
-            start(url, true);
+            innerStart(url, true);
         }
     }
 
@@ -283,12 +329,19 @@ public class SimplePlayer implements MediaPlayer.OnCompletionListener, MediaPlay
     private boolean hasNextDownloadFinishFile = false;
     private boolean hasNextPrepared = false;
 
+    /**
+     * 检查是否需要下载下一段文件
+     *
+     * @param audioInfo
+     * @param position
+     * @param duration
+     */
     private void checkNeedDownload(AudioInfo audioInfo, int position, int duration) {
         if (currentIndex == audioInfo.getSplitCount() - 1) {
             isLoadEnd = true;
             return;
         }
-        if (!isLoadEnd && !hasDownloadNext && position + 8000 > duration) {
+        if (!isLoadEnd && !hasDownloadNext && position + 12000 > duration) {
             hasDownloadNext = true;
             int nextIndex = currentIndex + 1;
             hasNextDownloadFinishFile = false;
@@ -312,61 +365,93 @@ public class SimplePlayer implements MediaPlayer.OnCompletionListener, MediaPlay
     }
 
 
-    @Override
-    public void onPrepared(MediaPlayer mp) {
-        if (mp == vNextMediaPlayer) {
-            hasNextPrepared = true;
-            LogUtils.d("onPrepared vNextMediaPlayer:");
-            return;
-        }
-        if (hasNextDownloadFinishFile) {
-            playNext();
-        } else {
-            isPrepared = true;
-            playerSeekTo(mp);
-            mp.start();
-            vHandler.removeCallbacksAndMessages(null);
-            vHandler.sendEmptyMessage(999);
-            LogUtils.d("onPrepared: lastUrl:" + lastUrl + " duration: " + mp.getDuration() + " seekToPos:" + seekToPos);
-        }
-    }
-
-    @Override
-    public void onCompletion(MediaPlayer mp) {
-        LogUtils.d("onCompletion: " + currentIndex + " / " + vAudioInfo.getSplitCount());
-        stop();
-        if (hasNextPrepared) {
-            playNext();
-        } else if (hasNextDownloadFinishFile) {
-
-        } else if (currentIndex != vAudioInfo.getSplitCount() - 1 && !hasDownloadNext) {
-            currentIndex++;
-            AudioCacheDownload.getInstance().download(vAudioInfo, currentIndex, vOnAudioFileDownloadNextListener);
-        } else {
-            isLoadEnd = true;
-        }
-    }
-
     private void playNext() {
         currentIndex++;
         hasNextPrepared = false;
-        LogUtils.d("playNext:"+vCurrentMediaPlayer + " / "+vNextMediaPlayer);
         stop();
         MediaPlayer temp = vCurrentMediaPlayer;
         vCurrentMediaPlayer = vNextMediaPlayer;
         vCurrentMediaPlayer.start();
         vNextMediaPlayer = temp;
+        //重新更新进度提示
+        resetUpdateProgressHandler();
         isPrepared = true;
-        vHandler.removeCallbacksAndMessages(null);
-        vHandler.sendEmptyMessage(999);
         hasNextDownloadFinishFile = false;
         hasDownloadNext = false;
+        vPlayState = PlayState.START;
+    }
+
+    private void resetUpdateProgressHandler() {
+        vHandler.removeCallbacksAndMessages(null);
+        vHandler.sendEmptyMessage(0);
     }
 
     private boolean isTouchSeekBar;
     private SeekBar vSeekBar;
 
     private TextView vCurrentTextView, vTotalTextView;
+
+
+    @Override
+    public boolean isPlaying() {
+        return vCurrentMediaPlayer != null && vCurrentMediaPlayer.isPlaying();
+    }
+
+    @Override
+    public int getCurrentPosition() {
+        if (vAudioInfo == null) {
+            return 0;
+        }
+        int currentPosition = vCurrentMediaPlayer.getCurrentPosition();
+        return currentIndex * vAudioInfo.getMediaType().getOneFileCacheSecond() * 1000 + currentPosition;
+    }
+
+    @Override
+    public void changeSpeed(boolean isAdd, float speed) {
+        if (canSetPlaybackParams()) {
+            PlaybackParams params = vCurrentMediaPlayer.getPlaybackParams();
+            if (params == null) {
+                params = new PlaybackParams();
+            }
+            float newSpeed;
+            if (isAdd) {
+                if (params.getSpeed() == 3f) {
+                    return;
+                }
+                newSpeed = params.getSpeed() + speed;
+                newSpeed = newSpeed > 3f ? 3f : newSpeed;
+            } else {
+                if (params.getSpeed() == 0.1f) {
+                    return;
+                }
+                newSpeed = params.getSpeed() - speed;
+                newSpeed = newSpeed <= 0.1f ? 0.1f : newSpeed;
+            }
+            params.setSpeed(newSpeed);
+            vCurrentMediaPlayer.setPlaybackParams(params);
+        }
+    }
+
+    private boolean canSetPlaybackParams() {
+        return Build.VERSION.SDK_INT >= 23;
+    }
+
+    @Override
+    public void resetSpeed() {
+        if (canSetPlaybackParams()) {
+            PlaybackParams params = vCurrentMediaPlayer.getPlaybackParams();
+            if (params == null || params.getSpeed() == 1f) {
+                return;
+            }
+            params.setSpeed(1f);
+            vCurrentMediaPlayer.setPlaybackParams(params);
+        }
+    }
+
+    @Override
+    public int getDuration() {
+        return vAudioInfo == null ? 0 : vAudioInfo.getDuration();
+    }
 
     public void bindTextView(TextView currentTextView, TextView totalTextView) {
         this.vCurrentTextView = currentTextView;
@@ -390,9 +475,9 @@ public class SimplePlayer implements MediaPlayer.OnCompletionListener, MediaPlay
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                if (seekBar.getMax() > 0 && Math.abs(touchPos - seekBar.getProgress()) > 3000) {
-                    vHandler.removeCallbacksAndMessages(null);
-                    playWithPos(DataUtils.testUrl, seekBar.getProgress());
+                if (seekBar.getMax() > 0 && Math.abs(touchPos - seekBar.getProgress()) > 3000 && vAudioInfo != null) {
+                    pause();
+                    playWithPos(vAudioInfo.getUrl(), seekBar.getProgress());
                     isTouchSeekBar = false;
                 }
             }

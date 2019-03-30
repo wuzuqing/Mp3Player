@@ -7,7 +7,7 @@ import java.util.Map;
  * 作者：士元
  * 时间：2019/2/23 13:19
  * 邮箱：wuzuqing@linghit.com
- * 说明：
+ * 说明：音频文件内存缓存
  */
 public class AudioCache {
 

@@ -6,15 +6,41 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class AudioInfo {
-
+    /**
+     * 当前网络文件的链接
+     */
     private String url;
+    /**
+     * 缓存文件完全下载的本地文件名
+     */
     private String finishFileName;
+    /**
+     * 文件分割的数量
+     */
     private int splitCount;
+    /**
+     * 每段分割文件的信息
+     */
     private Map<Integer, RangeInfo> rangeInfoList;
+    /**
+     * 文件大小
+     */
     private long contentLength;
+    /**
+     * 文件时长
+     */
     private int duration;
+    /**
+     * 文件格式
+     */
     private MediaType vMediaType;
+    /**
+     * 文件头部字节
+     */
     private byte[] headBytesStr;
+    /**
+     * 是否初始化
+     */
     private boolean isInit;
 
     public AudioInfo() {
@@ -45,6 +71,12 @@ public class AudioInfo {
         this.headBytesStr = headBytesStr;
     }
 
+    /**
+     * 初始化内容
+     *
+     * @param bytes
+     * @param contentLength
+     */
     public void init(byte[] bytes, long contentLength) {
         if (isInit) {
             return;
@@ -64,7 +96,7 @@ public class AudioInfo {
         headBytesStr = bytes;
         setContentLength(contentLength);
         float duration = (contentLength * 1f / vMediaType.getOneSecondSize());
-        System.out.println("duration:" + duration + " splitCount:" + splitCount + Arrays.toString(headBytesStr));
+
         splitCount = (int) Math.ceil(duration / vMediaType.getOneFileCacheSecond());
         this.duration = (int) (duration * 1000);
         rangeInfoList = new HashMap<>(splitCount);
@@ -76,6 +108,7 @@ public class AudioInfo {
             }
             rangeInfoList.put(i, rangeInfo);
         }
+        LogUtils.d("duration:" + duration + " splitCount:" + splitCount + Arrays.toString(headBytesStr));
     }
 
 
