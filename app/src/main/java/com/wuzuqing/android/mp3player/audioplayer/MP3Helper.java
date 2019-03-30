@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class AACHelper {
+public class MP3Helper {
     // 采样频率对照表
     private static Map<Integer, Integer> samplingFrequencyIndexMap = new HashMap<>();
 
@@ -48,36 +48,36 @@ public class AACHelper {
      * @throws IOException
      */
     public static AdtsHeader readADTSHeader(BitReader bitReader) {
-        if (bitReader.buffer.length < 7) {
-            return null;
-        }
+
         try {
             AdtsHeader adtsHeader = new AdtsHeader();
             bitReader.position = 0;
-            int syncWord = bitReader.readBits(12); // A
-            if (syncWord != 0xfff) {
-                throw new IOException("Expected Start Word 0xfff");
-            }
-            adtsHeader.mpegVersion = bitReader.readBits(1); // B
+            int syncWord = bitReader.readBits(11); // A
+//            if (syncWord != 0xfff) {
+//                throw new IOException("Expected Start Word 0xfff");
+//            }
+            adtsHeader.mpegVersion = bitReader.readBits(2); // B
             adtsHeader.layer = bitReader.readBits(2); // C
             adtsHeader.protectionAbsent = bitReader.readBits(1); // D
-            adtsHeader.profile = bitReader.readBits(2) + 1;  // E
-            adtsHeader.sampleFrequencyIndex = bitReader.readBits(4);
+
+            adtsHeader.profile = bitReader.readBits(4) ;  // E
+            adtsHeader.sampleFrequencyIndex = bitReader.readBits(2);
             adtsHeader.sampleRate = samplingFrequencyIndexMap.get(adtsHeader.sampleFrequencyIndex); // F
             bitReader.readBits(1); // G
-            adtsHeader.channelconfig = bitReader.readBits(3); // H
-            adtsHeader.original = bitReader.readBits(1); // I
-            adtsHeader.home = bitReader.readBits(1); // J
-            adtsHeader.copyrightedStream = bitReader.readBits(1); // K
-            adtsHeader.copyrightStart = bitReader.readBits(1); // L
-            adtsHeader.frameLength = bitReader.readBits(13); // M
-            adtsHeader.bufferFullness = bitReader.readBits(11); // 54
-            adtsHeader.numAacFramesPerAdtsFrame = bitReader.readBits(2) + 1; // 56
-            if (adtsHeader.numAacFramesPerAdtsFrame != 1) {
-                throw new IOException("This muxer can only work with 1 AAC frame per ADTS frame");
-            }
+            bitReader.readBits(1); // G
+            adtsHeader.channelconfig = bitReader.readBits(2); // H
+//            adtsHeader.original = bitReader.readBits(1); // I
+//            adtsHeader.home = bitReader.readBits(1); // J
+//            adtsHeader.copyrightedStream = bitReader.readBits(1); // K
+//            adtsHeader.copyrightStart = bitReader.readBits(1); // L
+//            adtsHeader.frameLength = bitReader.readBits(13); // M
+//            adtsHeader.bufferFullness = bitReader.readBits(11); // 54
+//            adtsHeader.numAacFramesPerAdtsFrame = bitReader.readBits(2) + 1; // 56
+//            if (adtsHeader.numAacFramesPerAdtsFrame != 1) {
+//                throw new IOException("This muxer can only work with 1 AAC frame per ADTS frame");
+//            }
             return adtsHeader;
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;

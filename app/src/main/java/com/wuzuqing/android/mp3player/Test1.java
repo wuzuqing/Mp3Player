@@ -1,13 +1,25 @@
 package com.wuzuqing.android.mp3player;
 
-import java.util.Arrays;
+import com.wuzuqing.android.mp3player.audioplayer.AACHelper;
+import com.wuzuqing.android.mp3player.audioplayer.AdtsHeader;
+import com.wuzuqing.android.mp3player.audioplayer.BitReader;
 
 public class Test1 {
 
-    public static void main(String[] args){
-        byte[] packet = new byte[8];
-        addADTStoPacket(packet,180);
-        System.out.println(Arrays.toString(packet));
+    public static void main(String[] args) {
+        //-1, -15, 76, 64, 19, -30, 96
+        //-1, -7, 12, 64, 22, -97, -4
+
+        try {
+            byte[] bytes = new byte[]{-1, -15, 76, 64, 0, 0, 0};
+            AdtsHeader header = AACHelper.readADTSHeader(new BitReader(bytes));
+            System.out.println(header);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+//        byte[] packet = new byte[8];
+//        addADTStoPacket(packet,180);
+//        System.out.println(Arrays.toString(packet));
     }
 
     /**

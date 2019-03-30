@@ -30,7 +30,7 @@ import okhttp3.Response;
  */
 public class AudioCacheDownload {
 
-    private static final boolean PRINT_BYTES = false;
+    private static final boolean PRINT_BYTES = true;
 
     public static boolean isAndroid = true;
     private OkHttpClient mOkHttpClient;
@@ -75,7 +75,7 @@ public class AudioCacheDownload {
     }
 
     private void initContentLength(AudioInfo audioInfo) throws IOException {
-        Response response = buildResponse(audioInfo.getUrl(), 0, 3);
+        Response response = buildResponse(audioInfo.getUrl(), 0, 13);
         String contentRange = response.header("Content-Range");
         LogUtils.d("contentRange:" + contentRange);
         long contentLength = Long.parseLong(contentRange.substring(contentRange.lastIndexOf("/") + 1));
