@@ -35,10 +35,115 @@ public class MP3Helper {
         samplingFrequencyIndexMap.put(0xb, 8000);
     }
 
+    /**
+     * 8
+     * 16
+     * 24
+     * 32
+     * 40
+     * 48
+     * 56
+     * 64
+     * 80
+     * 96
+     * 112
+     * 128
+     * 144
+     * 160
+     * 176
+     * 192
+     * 224
+     * 228
+     * 256
+     * 320
+     * 352
+     * 384
+     * 416
+     * 448
+     */
+
+
+    private static int getBitRate(int value, int fmpgVersion, int layer) {
+        switch (value) {
+            case 1:
+                switch (layer) {
+                    case 1:
+                        return 32000;
+                    case 2:
+                        if (fmpgVersion==1){
+
+                        }
+                        break;
+                    case 3:
+                        break;
+                }
+                break;
+            case 2:
+                break;
+            case 3:
+                break;
+            case 4:
+                break;
+            case 5:
+                break;
+            case 6:
+                break;
+            case 7:
+                break;
+            case 8:
+                break;
+            case 9:
+                break;
+            case 10:
+                break;
+            case 11:
+                break;
+            case 12:
+                break;
+            case 13:
+                break;
+            case 14:
+                break;
+        }
+
+        return 0;
+    }
+
+    private static int getBit(int fmpgVersion, int layer) {
+        switch (fmpgVersion) {
+            case 1:
+                break;
+            case 2:
+                break;
+            case 3:
+                break;
+        }
+        return 0;
+    }
 
     public static AdtsHeader readADTSHeader(byte[] bytes) {
         return readADTSHeader(new BitReader(bytes));
     }
+//
+//    private static byte otherValue = -125;
+//    private static char[] b = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+//
+//    private static byte intToHex(int n) {
+//        if (n <= 0) {
+//            String toHexString = Integer.toHexString(n);
+//            LogUtils.d("intToHex:" + toHexString);
+//
+//            return otherValue;
+//        }
+//        StringBuffer s = new StringBuffer();
+//        String a;
+//        while (n != 0) {
+//            s = s.append(b[n % 16]);
+//            n = n / 16;
+//        }
+//        a = s.reverse().toString();
+//        return Byte.parseByte(a);
+//    }
 
     /**
      * 从AAC文件流中读取ADTS头部
@@ -50,32 +155,32 @@ public class MP3Helper {
     public static AdtsHeader readADTSHeader(BitReader bitReader) {
 
         try {
+//            unsigned int sync:11;                        //同步信息
+//            unsigned int version:2;                      //版本
+//            unsigned int layer: 2;                           //层
+//            unsigned int error protection:1;           // CRC校验
+//            unsigned int bitrate_index:4;              //位率
+//            unsigned int sampling_frequency:2;         //采样频率
+//            unsigned int padding:1;                    //帧长调节
+//            unsigned int private:1;                       //保留字
+//            unsigned int mode:2;                         //声道模式
+//            unsigned int mode extension:2;        //扩充模式
+//            unsigned int copyright:1;                           // 版权
+//            unsigned int original:1;                      //原版标志
+//            unsigned int emphasis:2;                  //强调模式
             AdtsHeader adtsHeader = new AdtsHeader();
             bitReader.position = 0;
             int syncWord = bitReader.readBits(11); // A
-//            if (syncWord != 0xfff) {
-//                throw new IOException("Expected Start Word 0xfff");
-//            }
             adtsHeader.mpegVersion = bitReader.readBits(2); // B
             adtsHeader.layer = bitReader.readBits(2); // C
             adtsHeader.protectionAbsent = bitReader.readBits(1); // D
 
-            adtsHeader.profile = bitReader.readBits(4) ;  // E
+            adtsHeader.bitrate_index = bitReader.readBits(4);  // E
             adtsHeader.sampleFrequencyIndex = bitReader.readBits(2);
             adtsHeader.sampleRate = samplingFrequencyIndexMap.get(adtsHeader.sampleFrequencyIndex); // F
             bitReader.readBits(1); // G
             bitReader.readBits(1); // G
             adtsHeader.channelconfig = bitReader.readBits(2); // H
-//            adtsHeader.original = bitReader.readBits(1); // I
-//            adtsHeader.home = bitReader.readBits(1); // J
-//            adtsHeader.copyrightedStream = bitReader.readBits(1); // K
-//            adtsHeader.copyrightStart = bitReader.readBits(1); // L
-//            adtsHeader.frameLength = bitReader.readBits(13); // M
-//            adtsHeader.bufferFullness = bitReader.readBits(11); // 54
-//            adtsHeader.numAacFramesPerAdtsFrame = bitReader.readBits(2) + 1; // 56
-//            if (adtsHeader.numAacFramesPerAdtsFrame != 1) {
-//                throw new IOException("This muxer can only work with 1 AAC frame per ADTS frame");
-//            }
             return adtsHeader;
         } catch (Exception e) {
             e.printStackTrace();

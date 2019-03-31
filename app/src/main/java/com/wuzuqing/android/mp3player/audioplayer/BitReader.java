@@ -1,5 +1,6 @@
 package com.wuzuqing.android.mp3player.audioplayer;
 
+
 import java.util.Arrays;
 
 public class BitReader {
@@ -7,17 +8,8 @@ public class BitReader {
     public byte[] buffer;
 
     public BitReader(byte[] buffer) {
-        byte[] bytes = null;
-//        if (buffer.length == 4) {
-//            bytes = new byte[7];
-//            for (int i = 0; i < buffer.length; i++) {
-//                bytes[i] = buffer[i];
-//            }
-//        } else {
-//            bytes = buffer;
-//        }
         this.buffer = buffer;
-        LogUtils.d("buffer:"+Arrays.toString(buffer));
+        LogUtils.d("BitReader:"+Arrays.toString(buffer));
     }
 
     public int readBits(int i) {

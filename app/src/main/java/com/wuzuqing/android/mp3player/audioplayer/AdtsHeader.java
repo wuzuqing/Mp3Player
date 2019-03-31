@@ -40,6 +40,10 @@ public class AdtsHeader {
     int copyrightedStream;
     int copyrightStart;
     /**
+     * 位率
+     */
+    int bitrate_index;
+    /**
      * 一个ADTS帧的长度包括ADTS头和AAC原始流。frame length, this value must include 7 or 9 bytes of header length:
      */
     int frameLength;
@@ -67,6 +71,7 @@ public class AdtsHeader {
                 ", home=" + home +
                 ", copyrightedStream=" + copyrightedStream +
                 ", copyrightStart=" + copyrightStart +
+                ", bitrate_index=" + bitrate_index +
                 ", frameLength=" + frameLength +
                 ", bufferFullness=" + bufferFullness +
                 ", numAacFramesPerAdtsFrame=" + numAacFramesPerAdtsFrame +

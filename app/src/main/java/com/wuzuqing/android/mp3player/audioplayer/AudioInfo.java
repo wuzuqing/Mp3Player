@@ -100,7 +100,7 @@ public class AudioInfo {
             finishFileName = String.format("%s_over.mp3", name);
             duration = (contentLength * 1f /vMediaType.getOneSecondSize());
 //            AdtsHeader adtsHeader = MP3Helper.readADTSHeader(new byte[]{54,53,53,45});
-            AdtsHeader adtsHeader = MP3Helper.readADTSHeader(Arrays.copyOfRange(bytes, 10, 14));
+            AdtsHeader adtsHeader = MP3Helper.readADTSHeader(bytes);
             LogUtils.d("AdtsHeader:" + adtsHeader);
             headBytesStr = bytes;
         }
