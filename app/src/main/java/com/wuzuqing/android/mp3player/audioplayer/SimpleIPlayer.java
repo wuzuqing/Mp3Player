@@ -47,8 +47,8 @@ public class SimpleIPlayer implements IPlayer {
                 mp.seekTo(offset);
                 offset = -1;
             }
-            PlayerProgressManager.get().prepared(offset);
             _innerCallNewState(PlayState.START);
+            PlayerProgressManager.get().prepared(offset);
         }
     };
 
@@ -112,6 +112,11 @@ public class SimpleIPlayer implements IPlayer {
         } else if (vPlayState == PlayState.START) {
             pause();
         }
+    }
+
+    @Override
+    public void notifyProgress(int progress) {
+
     }
 
     @Override

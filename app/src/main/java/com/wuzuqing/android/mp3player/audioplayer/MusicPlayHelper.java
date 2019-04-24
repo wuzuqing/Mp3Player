@@ -86,6 +86,10 @@ public class MusicPlayHelper implements IPlayer {
         vIPlayer.setOnStateChangeListener(listener);
     }
 
+    @Override
+    public void notifyProgress(int progress) {
+
+    }
 
     public void bindTextView(TextView currentTextView, TextView totalTextView) {
         PlayerProgressManager.get().bindTextView(currentTextView, totalTextView);

@@ -6,6 +6,8 @@ import android.os.Message;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.wuzuqing.android.mp3player.audioplayer.util.LogUtils;
+
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Locale;
@@ -25,6 +27,10 @@ public class PlayerProgressManager {
     private Handler mProgressHandler;
     private IPlayer mPlayer;
     private Set<OnProgressChangeListener> vChangeListeners;
+
+    private boolean isTouchSeekBar;
+    private SeekBar vSeekBar;
+    private TextView vCurrentTextView, vTotalTextView;
 
     public static PlayerProgressManager get() {
         return instance;
@@ -70,13 +76,10 @@ public class PlayerProgressManager {
             while (iterator.hasNext()) {
                 OnProgressChangeListener next = iterator.next();
                 next.changeProgress(currentPosition, toTimeStr);
+                mPlayer.notifyProgress(currentPosition);
             }
         }
     }
-
-    private boolean isTouchSeekBar;
-    private SeekBar vSeekBar;
-    private TextView vCurrentTextView, vTotalTextView;
 
     void bindTextView(TextView currentTextView, TextView totalTextView) {
         this.vCurrentTextView = currentTextView;
@@ -109,6 +112,7 @@ public class PlayerProgressManager {
     }
 
     public void setDurationStr(int pos) {
+        LogUtils.d("setDurationStr:"+pos);
         String toTimeStr = posToTimeStr(pos);
         if (vTotalTextView != null) {
             vTotalTextView.setText(toTimeStr);
@@ -155,7 +159,11 @@ public class PlayerProgressManager {
     }
 
     public void prepared(int offset) {
+        if (mPlayer==null) return;
         if (vSeekBar != null) {
+            if (vSeekBar.getMax() == offset){
+                return;
+            }
             vSeekBar.setMax(mPlayer.getDuration());
             if (offset != -1) {
                 vSeekBar.setProgress(offset);
@@ -167,5 +175,21 @@ public class PlayerProgressManager {
     public void reset() {
         setDurationStr(0);
         setProgressStr(0);
+    }
+
+    public void setMax(int duration) {
+        if (vSeekBar != null) {
+//        if (vSeekBar != null && vSeekBar.getMax() == 0) {
+            vSeekBar.setMax(duration);
+        }
+    }
+
+    public void setViewZero() {
+        if (Thread.currentThread() == Looper.getMainLooper().getThread()) {
+            if (vCurrentTextView != null) {
+                vCurrentTextView.setText("00:00");
+                vTotalTextView.setText("00:00");
+            }
+        }
     }
 }

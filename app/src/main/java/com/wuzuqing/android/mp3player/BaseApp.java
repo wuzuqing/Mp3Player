@@ -5,8 +5,8 @@ import android.content.Context;
 import android.os.Environment;
 
 import com.wuzuqing.android.mp3player.audioplayer.AudioCacheDownload;
+import com.wuzuqing.android.mp3player.audioplayer.LargeAudioPlayer;
 import com.wuzuqing.android.mp3player.audioplayer.MusicPlayHelper;
-import com.wuzuqing.android.mp3player.audioplayer.SimpleIPlayer;
 
 import java.io.File;
 
@@ -25,7 +25,7 @@ public class BaseApp extends Application {
         sContext = this;
         File cacheFileDir = new File(Environment.getExternalStorageDirectory(), "cacheAac");
         AudioCacheDownload.getInstance().setCacheFileDir(cacheFileDir);
-        MusicPlayHelper.get().init(new SimpleIPlayer());
+        MusicPlayHelper.get().init(new LargeAudioPlayer());
     }
 
     public static Context getContext() {

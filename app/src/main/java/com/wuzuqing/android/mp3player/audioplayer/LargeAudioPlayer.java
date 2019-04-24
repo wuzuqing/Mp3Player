@@ -4,16 +4,10 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.PlaybackParams;
 import android.os.Build;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.Message;
-import android.widget.SeekBar;
-import android.widget.TextView;
 
 import com.wuzuqing.android.mp3player.audioplayer.util.LogUtils;
 
 import java.io.IOException;
-import java.util.Locale;
 
 /**
  * 作者：士元
@@ -35,7 +29,6 @@ public class LargeAudioPlayer implements IPlayer {
     private boolean isLoadEnd;
 
     private PlayState vPlayState = PlayState.NONE;
-
 
 
     private void initPlayer() {
@@ -93,9 +86,11 @@ public class LargeAudioPlayer implements IPlayer {
             } else {
                 isPrepared = true;
                 innerPlayerSeekTo(mp);
+                oneFileDuration = vAudioInfo.getMediaType().getOneFileCacheSecond() * 1000;
                 mp.start();
                 vPlayState = PlayState.START;
                 _innerCallNewState(vPlayState);
+                PlayerProgressManager.get().prepared(getDuration());
                 resetUpdateProgressHandler();
                 LogUtils.d("onPrepared: lastUrl:" + lastUrl + " duration: " + mp.getDuration() + " seekToPos:" + seekToPos);
             }
@@ -136,7 +131,7 @@ public class LargeAudioPlayer implements IPlayer {
         if (isPrepared) {
             vPlayState = PlayState.PAUSE;
             vCurrentMediaPlayer.pause();
-            vHandler.removeCallbacksAndMessages(null);
+            PlayerProgressManager.get().pause();
             _innerCallNewState(vPlayState);
         }
     }
@@ -148,14 +143,9 @@ public class LargeAudioPlayer implements IPlayer {
             vCurrentMediaPlayer.reset();
             isPrepared = false;
             vPlayState = PlayState.STOP;
-            vHandler.removeCallbacksAndMessages(null);
+            PlayerProgressManager.get().pause();
             _innerCallNewState(vPlayState);
-            if (Thread.currentThread() == Looper.getMainLooper().getThread()) {
-                if (vCurrentTextView != null) {
-                    vCurrentTextView.setText("00:00");
-                    vTotalTextView.setText("00:00");
-                }
-            }
+            PlayerProgressManager.get().setViewZero();
         }
         lastUrl = null;
     }
@@ -163,10 +153,7 @@ public class LargeAudioPlayer implements IPlayer {
 
     public void playUrl(String url) {
         currentIndex = 0;
-        //重置
-        if (vSeekBar != null) {
-            vSeekBar.setMax(0);
-        }
+        PlayerProgressManager.get().setMax(0);
         playWithPos(url, -1);
     }
 
@@ -174,7 +161,7 @@ public class LargeAudioPlayer implements IPlayer {
         LogUtils.d("seekToWithOffset:" + offset);
         if (isPrepared) {
             int currentPosition = vCurrentMediaPlayer.getCurrentPosition();
-            int realPosition = currentIndex * vAudioInfo.getMediaType().getOneFileCacheSecond() * 1000 + currentPosition;
+            int realPosition = currentIndex * oneFileDuration + currentPosition;
             if (isAdd) {
                 realPosition += offset;
                 int duration = vAudioInfo.getDuration();
@@ -274,9 +261,6 @@ public class LargeAudioPlayer implements IPlayer {
     private OnAudioFileDownloadListener vOnAudioFileDownloadListener = new OnAudioFileDownloadListener() {
         @Override
         public void onFinish(AudioInfo audioInfo, RangeInfo rangeInfo) {
-            if (vSeekBar != null && vSeekBar.getMax() == 0) {
-                vSeekBar.setMax(audioInfo.getDuration());
-            }
             //开始播放
             startWithOffset(AudioCacheDownload.getInstance().getRangeInfoFileName(rangeInfo), seekToPos);
         }
@@ -311,6 +295,7 @@ public class LargeAudioPlayer implements IPlayer {
 
         }
     };
+    private int oneFileDuration = 0;
 
     private void startWithOffset(String url, int toPos) {
         LogUtils.d("startSeekToWithOffset:" + toPos);
@@ -331,40 +316,23 @@ public class LargeAudioPlayer implements IPlayer {
         }
     }
 
+    @Override
+    public void notifyProgress(int progress) {
+        checkNeedDownload(vAudioInfo, vCurrentMediaPlayer.getCurrentPosition(), oneFileDuration);
+    }
 
-    private Handler vHandler = new Handler(Looper.getMainLooper()) {
-        @Override
-        public void handleMessage(Message msg) {
-            if (msg.what == 0) {
-                updatePos();
-                sendEmptyMessageDelayed(0, 1000);
-            } else if (msg.what == 888) {
-
-            }
+    @Override
+    public int getCurrentPosition() {
+        if (vAudioInfo == null) {
+            return 0;
         }
-    };
-
-
-    private void updatePos() {
-        AudioInfo audioInfo = vAudioInfo;
-        if (vCurrentMediaPlayer != null && isPrepared && vCurrentMediaPlayer.isPlaying()) {
-            int currentPosition = vCurrentMediaPlayer.getCurrentPosition();
-            int realPosition = currentIndex * audioInfo.getMediaType().getOneFileCacheSecond() * 1000 + currentPosition;
-            if (!isTouchSeekBar) {
-                if (vSeekBar != null) {
-                    vSeekBar.setProgress(realPosition);
-                }
-            }
-            if (vCurrentTextView != null) {
-                vCurrentTextView.setText(posToTimeStr(realPosition));
-                vTotalTextView.setText(posToTimeStr(audioInfo.getDuration()));
-            }
-            checkNeedDownload(audioInfo, currentPosition, vCurrentMediaPlayer.getDuration());
-        }
+        int currentPosition = vCurrentMediaPlayer.getCurrentPosition();
+        return currentIndex * oneFileDuration + currentPosition;
     }
 
     private boolean hasDownloadNext;
     private boolean hasNextDownloadFinishFile = false;
+
     private boolean hasNextPrepared = false;
 
     /**
@@ -393,16 +361,6 @@ public class LargeAudioPlayer implements IPlayer {
         AudioCacheDownload.getInstance().download(vAudioInfo, index, listener);
     }
 
-    private String posToTimeStr(int pos) {
-        int second = pos / 1000;
-        int minute = second / 60;
-        int hour = minute / 60;
-        if (hour > 0) {
-            return String.format(Locale.getDefault(), "%02d:%02d:%02d", hour, minute % 60, second % 60);
-        }
-        return String.format(Locale.getDefault(), "%02d:%02d", minute % 60, second % 60);
-    }
-
 
     private void playNext() {
         currentIndex++;
@@ -421,14 +379,8 @@ public class LargeAudioPlayer implements IPlayer {
     }
 
     private void resetUpdateProgressHandler() {
-        vHandler.removeCallbacksAndMessages(null);
-        vHandler.sendEmptyMessage(0);
+        PlayerProgressManager.get().start();
     }
-
-    private boolean isTouchSeekBar;
-    private SeekBar vSeekBar;
-
-    private TextView vCurrentTextView, vTotalTextView;
 
 
     @Override
@@ -437,17 +389,8 @@ public class LargeAudioPlayer implements IPlayer {
     }
 
     @Override
-    public int getCurrentPosition() {
-        if (vAudioInfo == null) {
-            return 0;
-        }
-        int currentPosition = vCurrentMediaPlayer.getCurrentPosition();
-        return currentIndex * vAudioInfo.getMediaType().getOneFileCacheSecond() * 1000 + currentPosition;
-    }
-
-    @Override
     public void changeSpeed(boolean isAdd, float speed) {
-        if (!isPrepared){
+        if (!isPrepared) {
             return;
         }
         if (canSetPlaybackParams()) {
@@ -487,7 +430,8 @@ public class LargeAudioPlayer implements IPlayer {
 
     @Override
     public void seekTo(int offset) {
-
+        pause();
+        playWithPos(vAudioInfo.getUrl(), offset);
     }
 
     @Override
@@ -506,38 +450,5 @@ public class LargeAudioPlayer implements IPlayer {
     public int getDuration() {
         return vAudioInfo == null ? 0 : vAudioInfo.getDuration();
     }
-
-    public void bindTextView(TextView currentTextView, TextView totalTextView) {
-        this.vCurrentTextView = currentTextView;
-        this.vTotalTextView = totalTextView;
-    }
-
-    public void bindSeekBar(SeekBar seekBar) {
-        this.vSeekBar = seekBar;
-        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            int touchPos;
-
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-                touchPos = seekBar.getProgress();
-                isTouchSeekBar = true;
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-                if (seekBar.getMax() > 0 && Math.abs(touchPos - seekBar.getProgress()) > 3000 && vAudioInfo != null) {
-                    pause();
-                    playWithPos(vAudioInfo.getUrl(), seekBar.getProgress());
-                    isTouchSeekBar = false;
-                }
-            }
-        });
-    }
-
-
 
 }

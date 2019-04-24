@@ -27,7 +27,8 @@ public interface IPlayer {
      *
      * @param offset
      */
-    void seekTo( int offset);
+    void seekTo(int offset);
+
     /**
      * 暂停后恢复播放
      */
@@ -86,5 +87,12 @@ public interface IPlayer {
     void resetSpeed();
 
     void setOnStateChangeListener(OnStateChangeListener listener);
+
+    /**
+     * 用于边下边播，检查是需要下载下一段视频
+     *
+     * @param progress
+     */
+    void notifyProgress(int progress);
 
 }
