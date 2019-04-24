@@ -55,7 +55,7 @@ public class LargeAudioPlayer implements IPlayer {
     private MediaPlayer.OnCompletionListener vOnCompletionListener = new MediaPlayer.OnCompletionListener() {
         @Override
         public void onCompletion(MediaPlayer mp) {
-            LogUtils.d("onCompletion: " + currentIndex + " / " + vAudioInfo.getSplitCount()+" hasNextPrepared : "+hasNextPrepared);
+            LogUtils.d("onCompletion: " + currentIndex + " / " + vAudioInfo.getSplitCount() + " hasNextPrepared : " + hasNextPrepared);
             if (hasNextPrepared) {
                 playNext();
             } else if (currentIndex != vAudioInfo.getSplitCount() - 1 && !hasDownloadNext) {
@@ -85,14 +85,12 @@ public class LargeAudioPlayer implements IPlayer {
 
         @Override
         public void onPrepared(MediaPlayer mp) {
-            if (mp == vNextMediaPlayer) {
-                if (isPrepared) {
-                    hasNextPrepared = true;
-                } else {
-                    playNext();
-                }
-                LogUtils.d("onPrepared vNextMediaPlayer:");
+            if (isPrepared) {
+                hasNextPrepared = true;
+            } else {
+                playNext();
             }
+            LogUtils.d("onPrepared vNextMediaPlayer:");
         }
     };
 
@@ -118,7 +116,7 @@ public class LargeAudioPlayer implements IPlayer {
     }
 
     private void _innerCallNewState(PlayState playState) {
-        if (playState==vPlayState){
+        if (playState == vPlayState) {
             return;
         }
         vPlayState = playState;
