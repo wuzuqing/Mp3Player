@@ -46,8 +46,8 @@ public class LargeAudioPlayer implements IPlayer {
         if (vNextMediaPlayer == null) {
             vNextMediaPlayer = new MediaPlayer();
             vNextMediaPlayer.setOnCompletionListener(vOnCompletionListener);
-            vNextMediaPlayer.setOnPreparedListener(vOnPreparedListener);
-            vCurrentMediaPlayer.setOnErrorListener(vOnErrorListener);
+            vNextMediaPlayer.setOnPreparedListener(vOnNextPreparedListener);
+            vNextMediaPlayer.setOnErrorListener(vOnErrorListener);
             vNextMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         }
     }
@@ -55,8 +55,7 @@ public class LargeAudioPlayer implements IPlayer {
     private MediaPlayer.OnCompletionListener vOnCompletionListener = new MediaPlayer.OnCompletionListener() {
         @Override
         public void onCompletion(MediaPlayer mp) {
-            LogUtils.d("onCompletion: " + currentIndex + " / " + vAudioInfo.getSplitCount());
-            stop();
+            LogUtils.d("onCompletion: " + currentIndex + " / " + vAudioInfo.getSplitCount()+" hasNextPrepared : "+hasNextPrepared);
             if (hasNextPrepared) {
                 playNext();
             } else if (currentIndex != vAudioInfo.getSplitCount() - 1 && !hasDownloadNext) {
@@ -72,27 +71,27 @@ public class LargeAudioPlayer implements IPlayer {
 
         @Override
         public void onPrepared(MediaPlayer mp) {
+            isPrepared = true;
+            innerPlayerSeekTo(mp);
+            oneFileDuration = vAudioInfo.getMediaType().getOneFileCacheSecond() * 1000;
+            mp.start();
+            _innerCallNewState(PlayState.START);
+            PlayerProgressManager.get().prepared(getDuration());
+            resetUpdateProgressHandler();
+            LogUtils.d("onPrepared: lastUrl:" + lastUrl + " duration: " + mp.getDuration() + " seekToPos:" + seekToPos);
+        }
+    };
+    private MediaPlayer.OnPreparedListener vOnNextPreparedListener = new MediaPlayer.OnPreparedListener() {
+
+        @Override
+        public void onPrepared(MediaPlayer mp) {
             if (mp == vNextMediaPlayer) {
-                if (!isPrepared) {
-                    playNext();
-                } else {
+                if (isPrepared) {
                     hasNextPrepared = true;
+                } else {
+                    playNext();
                 }
                 LogUtils.d("onPrepared vNextMediaPlayer:");
-                return;
-            }
-            if (hasNextPrepared) {
-                playNext();
-            } else {
-                isPrepared = true;
-                innerPlayerSeekTo(mp);
-                oneFileDuration = vAudioInfo.getMediaType().getOneFileCacheSecond() * 1000;
-                mp.start();
-                vPlayState = PlayState.START;
-                _innerCallNewState(vPlayState);
-                PlayerProgressManager.get().prepared(getDuration());
-                resetUpdateProgressHandler();
-                LogUtils.d("onPrepared: lastUrl:" + lastUrl + " duration: " + mp.getDuration() + " seekToPos:" + seekToPos);
             }
         }
     };
@@ -101,10 +100,8 @@ public class LargeAudioPlayer implements IPlayer {
         @Override
         public boolean onError(MediaPlayer mp, int what, int extra) {
             int second = (mp.getCurrentPosition()) / 1000;
-            if (second > 175) {
-                if (hasNextPrepared) {
-                    playNext();
-                }
+            if (hasNextPrepared && vAudioInfo != null && second > vAudioInfo.getMediaType().getOneFileCacheSecond() - 5) {
+                playNext();
             }
             LogUtils.d(" what:" + what + " extra:" + extra + " second:" + second + " hasNextDownloadFinishFile:" + hasNextDownloadFinishFile + " isPrepared:" + isPrepared);
             return true;
@@ -116,12 +113,15 @@ public class LargeAudioPlayer implements IPlayer {
         if (isPrepared) {
             vCurrentMediaPlayer.start();
             resetUpdateProgressHandler();
-            vPlayState = PlayState.START;
-            _innerCallNewState(vPlayState);
+            _innerCallNewState(PlayState.START);
         }
     }
 
     private void _innerCallNewState(PlayState playState) {
+        if (playState==vPlayState){
+            return;
+        }
+        vPlayState = playState;
         if (mOnStateChangeListener != null) {
             mOnStateChangeListener.changeState(playState);
         }
@@ -129,27 +129,31 @@ public class LargeAudioPlayer implements IPlayer {
 
     public void pause() {
         if (isPrepared) {
-            vPlayState = PlayState.PAUSE;
             vCurrentMediaPlayer.pause();
             PlayerProgressManager.get().pause();
-            _innerCallNewState(vPlayState);
+            _innerCallNewState(PlayState.PAUSE);
         }
     }
 
     public void stop() {
+        _stop(true);
+        lastUrl = null;
+    }
+
+    private void _stop(boolean newStateCall) {
         if (vCurrentMediaPlayer != null && isPrepared) {
             LogUtils.d("stop: " + currentIndex + " / " + vAudioInfo.getSplitCount() + " isPrepared:" + isPrepared);
             vCurrentMediaPlayer.stop();
             vCurrentMediaPlayer.reset();
-            isPrepared = false;
-            vPlayState = PlayState.STOP;
-            PlayerProgressManager.get().pause();
-            _innerCallNewState(vPlayState);
-            PlayerProgressManager.get().setViewZero();
+            if (newStateCall) {
+                isPrepared = false;
+                PlayerProgressManager.get().pause();
+                _innerCallNewState(PlayState.STOP);
+                PlayerProgressManager.get().setViewZero();
+                lastUrl = null;
+            }
         }
-        lastUrl = null;
     }
-
 
     public void playUrl(String url) {
         currentIndex = 0;
@@ -188,12 +192,12 @@ public class LargeAudioPlayer implements IPlayer {
             initNextPlayer();
         }
         try {
-            LogUtils.d("innerStart setDataSource:");
+            LogUtils.d("innerStart setDataSource:" + isCurrent);
             if (isCurrent) {
                 vCurrentMediaPlayer.reset();
+                vCurrentMediaPlayer.setOnPreparedListener(vOnPreparedListener);
                 vCurrentMediaPlayer.setDataSource(url);
-                vPlayState = PlayState.PREPARE;
-                _innerCallNewState(vPlayState);
+                _innerCallNewState(PlayState.PREPARE);
                 vCurrentMediaPlayer.prepareAsync();
                 lastUrl = url;
             } else {
@@ -241,7 +245,7 @@ public class LargeAudioPlayer implements IPlayer {
         if (pos == -1) {
             seekToPos = -1;
         } else {
-            float ms = (1000f * audioInfo.getMediaType().getOneFileCacheSecond());
+            float ms = 1f * oneFileDuration;
             currentIndex = (int) (pos / ms);
             seekToPos = pos % (int) ms;
         }
@@ -272,8 +276,7 @@ public class LargeAudioPlayer implements IPlayer {
 
         @Override
         public void onLoading() {
-            vPlayState = PlayState.LOADING;
-            _innerCallNewState(vPlayState);
+            _innerCallNewState(PlayState.LOADING);
         }
     };
 
@@ -303,8 +306,7 @@ public class LargeAudioPlayer implements IPlayer {
         if (url != null && url.equals(lastUrl)) {
             if (isPrepared) {
                 innerPlayerSeekTo(vCurrentMediaPlayer);
-                vPlayState = PlayState.START;
-                _innerCallNewState(vPlayState);
+                _innerCallNewState(PlayState.START);
                 vCurrentMediaPlayer.start();
                 resetUpdateProgressHandler();
             } else {
@@ -365,17 +367,18 @@ public class LargeAudioPlayer implements IPlayer {
     private void playNext() {
         currentIndex++;
         hasNextPrepared = false;
-        stop();
+        vNextMediaPlayer.start();
+        vCurrentMediaPlayer.stop();
         MediaPlayer temp = vCurrentMediaPlayer;
         vCurrentMediaPlayer = vNextMediaPlayer;
-        vCurrentMediaPlayer.start();
         vNextMediaPlayer = temp;
+        vNextMediaPlayer.reset();
         //重新更新进度提示
         resetUpdateProgressHandler();
         isPrepared = true;
         hasNextDownloadFinishFile = false;
         hasDownloadNext = false;
-        vPlayState = PlayState.START;
+        _innerCallNewState(PlayState.START);
     }
 
     private void resetUpdateProgressHandler() {
