@@ -1,5 +1,8 @@
 package com.wuzuqing.android.mp3player.audioplayer;
 
+import android.widget.SeekBar;
+import android.widget.TextView;
+
 /**
  * 作者：士元
  * 时间：2019/4/24 19:25
@@ -81,5 +84,22 @@ public class MusicPlayHelper implements IPlayer {
     @Override
     public void setOnStateChangeListener(OnStateChangeListener listener) {
         vIPlayer.setOnStateChangeListener(listener);
+    }
+
+
+    public void bindTextView(TextView currentTextView, TextView totalTextView) {
+        PlayerProgressManager.get().bindTextView(currentTextView, totalTextView);
+    }
+
+    public void bindSeekBar(SeekBar seekBar) {
+        PlayerProgressManager.get().bindSeekBar(seekBar);
+    }
+
+    public void setOnProgressChangeListener(OnProgressChangeListener listener, boolean isRegister) {
+        if (isRegister) {
+            PlayerProgressManager.get().registerOnProgressChangeListener(listener);
+        } else {
+            PlayerProgressManager.get().unRegisterOnProgressChangeListener(listener);
+        }
     }
 }

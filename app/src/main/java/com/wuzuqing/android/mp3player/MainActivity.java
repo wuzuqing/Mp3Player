@@ -8,17 +8,15 @@ import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
-import com.wuzuqing.android.mp3player.audioplayer.IPlayer;
+import com.wuzuqing.android.mp3player.audioplayer.MusicPlayHelper;
 import com.wuzuqing.android.mp3player.audioplayer.OnProgressChangeListener;
 import com.wuzuqing.android.mp3player.audioplayer.OnStateChangeListener;
 import com.wuzuqing.android.mp3player.audioplayer.PlayState;
-import com.wuzuqing.android.mp3player.audioplayer.PlayerProgressManager;
-import com.wuzuqing.android.mp3player.audioplayer.SimpleIPlayer;
 import com.wuzuqing.android.mp3player.audioplayer.util.LogUtils;
 
 public class MainActivity extends AppCompatActivity {
 
-    IPlayer vSimplePlayer = new SimpleIPlayer();
+//    IPlayer MusicPlayHelper.get() = new SimpleIPlayer();
     private EditText vEditText, vEtIndex;
     private SeekBar vSeekBar;
     private ProgressBar progressBar;
@@ -36,8 +34,8 @@ public class MainActivity extends AppCompatActivity {
         vCurrentView = findViewById(R.id.tvCurrentTime);
         progressBar = findViewById(R.id.progressBar);
         logView = findViewById(R.id.log);
-        PlayerProgressManager.get().bindSeekBar(vSeekBar);
-        vSimplePlayer.setOnStateChangeListener(new OnStateChangeListener() {
+        MusicPlayHelper.get().bindSeekBar(vSeekBar);
+        MusicPlayHelper.get().setOnStateChangeListener(new OnStateChangeListener() {
             @Override
             public void changeState(final PlayState newState) {
                 LogUtils.d("changeState:" + newState);
@@ -54,7 +52,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         setUrlToView(DataUtils.urls[0]);
-        PlayerProgressManager.get().registerOnProgressChangeListener(vOnProgressChangeListener);
+        MusicPlayHelper.get().setOnProgressChangeListener(vOnProgressChangeListener,true);
 //        PlayerProgressManager.get().bindTextView((TextView) findViewById(R.id.tvCurrentTime), (TextView) findViewById(R.id.tvTotalTime));
 
         LogUtils.setvOnLogChangeListener(new LogUtils.OnLogChangeListener() {
@@ -87,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
     public void start(View view) {
         int index = Integer.valueOf(vEtIndex.getText().toString());
         String url = DataUtils.urls[index % DataUtils.urls.length];
-        vSimplePlayer.playUrl(url);
+        MusicPlayHelper.get().playUrl(url);
         setUrlToView(url);
     }
 
@@ -98,23 +96,23 @@ public class MainActivity extends AppCompatActivity {
 
 
     public void pause(View view) {
-        vSimplePlayer.pause();
+        MusicPlayHelper.get().pause();
     }
 
     public void stop(View view) {
-        vSimplePlayer.stop();
+        MusicPlayHelper.get().stop();
     }
 
     public void resume(View view) {
-        vSimplePlayer.resume();
+        MusicPlayHelper.get().resume();
     }
 
     public void houTui(View view) {
-        vSimplePlayer.seekToWithOffset(false, 15000);
+        MusicPlayHelper.get().seekToWithOffset(false, 15000);
     }
 
     public void qianJin(View view) {
-        vSimplePlayer.seekToWithOffset(true, 15000);
+        MusicPlayHelper.get().seekToWithOffset(true, 15000);
     }
 
     public void clear(View view) {
@@ -122,15 +120,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void zjSpeed(View view) {
-        vSimplePlayer.changeSpeed(true, 0.2f);
+        MusicPlayHelper.get().changeSpeed(true, 0.2f);
     }
 
     public void jsSpeed(View view) {
-        vSimplePlayer.changeSpeed(false, 0.2f);
+        MusicPlayHelper.get().changeSpeed(false, 0.2f);
     }
 
     @Override
     protected void onDestroy() {
-        PlayerProgressManager.get().unRegisterOnProgressChangeListener(vOnProgressChangeListener);
+        super.onDestroy();
+        MusicPlayHelper.get().setOnProgressChangeListener(vOnProgressChangeListener,false);
     }
 }

@@ -78,12 +78,12 @@ public class PlayerProgressManager {
     private SeekBar vSeekBar;
     private TextView vCurrentTextView, vTotalTextView;
 
-    public void bindTextView(TextView currentTextView, TextView totalTextView) {
+    void bindTextView(TextView currentTextView, TextView totalTextView) {
         this.vCurrentTextView = currentTextView;
         this.vTotalTextView = totalTextView;
     }
 
-    public void bindSeekBar(SeekBar seekBar) {
+    void bindSeekBar(SeekBar seekBar) {
         this.vSeekBar = seekBar;
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             int touchPos;
@@ -142,13 +142,13 @@ public class PlayerProgressManager {
     }
 
 
-    public void registerOnProgressChangeListener(OnProgressChangeListener listener) {
+    void registerOnProgressChangeListener(OnProgressChangeListener listener) {
         if (!vChangeListeners.contains(listener)) {
             vChangeListeners.add(listener);
         }
     }
 
-    public void unRegisterOnProgressChangeListener(OnProgressChangeListener listener) {
+    void unRegisterOnProgressChangeListener(OnProgressChangeListener listener) {
         if (vChangeListeners.contains(listener)) {
             vChangeListeners.remove(listener);
         }
