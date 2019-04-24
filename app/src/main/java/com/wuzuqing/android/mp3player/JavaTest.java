@@ -4,13 +4,11 @@ import com.wuzuqing.android.mp3player.audioplayer.AudioCache;
 import com.wuzuqing.android.mp3player.audioplayer.AudioCacheDownload;
 import com.wuzuqing.android.mp3player.audioplayer.AudioError;
 import com.wuzuqing.android.mp3player.audioplayer.AudioInfo;
-import com.wuzuqing.android.mp3player.audioplayer.LogUtils;
 import com.wuzuqing.android.mp3player.audioplayer.OnAudioFileDownloadListener;
 import com.wuzuqing.android.mp3player.audioplayer.OnAudioFileInitListener;
 import com.wuzuqing.android.mp3player.audioplayer.RangeInfo;
 
 import java.io.File;
-import java.util.Collections;
 import java.util.LinkedList;
 
 /**
@@ -24,6 +22,7 @@ public class JavaTest {
         AudioCacheDownload.isAndroid = false;
         final AudioCacheDownload download = AudioCacheDownload.getInstance();
         download.setCacheFileDir(new File("e://test"));
+        int index = 7;
         AudioInfo audioInfo = AudioCache.getInstance().getAudioInfo(DataUtils.urls[0]);
         download.syncInitContentLength(audioInfo, new OnAudioFileInitListener() {
             @Override
@@ -59,8 +58,8 @@ public class JavaTest {
 //            download.download(audioInfo, i, finishListener);
 //            Thread.sleep(20);
         }
-        Collections.shuffle(indexs);
-        LogUtils.d(indexs.toString());
+//        Collections.shuffle(indexs);
+//        LogUtils.d(indexs.toString());
         while (!indexs.isEmpty()) {
             download.download(audioInfo, indexs.removeFirst(), finishListener);
             Thread.sleep(200);

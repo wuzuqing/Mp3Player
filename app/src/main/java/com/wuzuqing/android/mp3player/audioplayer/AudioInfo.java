@@ -43,6 +43,8 @@ public class AudioInfo {
      */
     private boolean isInit;
 
+    private AACHelper aacHelper;
+
     public AudioInfo() {
 
     }
@@ -82,20 +84,29 @@ public class AudioInfo {
             return;
         }
         isInit = true;
+        float duration = 0f;
+        setContentLength(contentLength);
         if (url.contains("aac")) {
             vMediaType = MediaType.AAC;
             String name = url.substring(url.lastIndexOf("_") + 1, url.lastIndexOf("."));
             finishFileName = String.format("%s_over.aac", name);
+            AdtsHeader adtsHeader = AACHelper.readADTSHeader(bytes);
+            LogUtils.d("AdtsHeader:" + adtsHeader);
+            duration = (contentLength * (1024000f / adtsHeader.sampleRate) / adtsHeader.frameLength);
+            headBytesStr = Arrays.copyOf(bytes,4);
         } else if (url.contains("mp3")) {
             vMediaType = MediaType.MP3;
             String name = url.substring(url.lastIndexOf("/") + 1, url.lastIndexOf("."));
             finishFileName = String.format("%s_over.mp3", name);
+            duration = (contentLength * 1f /vMediaType.getOneSecondSize());
+//            AdtsHeader adtsHeader = MP3Helper.readADTSHeader(new byte[]{54,53,53,45});
+            AdtsHeader adtsHeader = MP3Helper.readADTSHeader(bytes);
+            LogUtils.d("AdtsHeader:" + adtsHeader);
+            headBytesStr = bytes;
         }
 
         setUrl(url);
-        headBytesStr = bytes;
-        setContentLength(contentLength);
-        float duration = (contentLength * 1f / vMediaType.getOneSecondSize());
+
 
         splitCount = (int) Math.ceil(duration / vMediaType.getOneFileCacheSecond());
         this.duration = (int) (duration * 1000);
@@ -108,7 +119,7 @@ public class AudioInfo {
             }
             rangeInfoList.put(i, rangeInfo);
         }
-        LogUtils.d("duration:" + duration + " splitCount:" + splitCount + Arrays.toString(headBytesStr));
+        LogUtils.d("duration:" + duration + " splitCount:" + splitCount + Arrays.toString(headBytesStr) + " url:"+url);
     }
 
 
