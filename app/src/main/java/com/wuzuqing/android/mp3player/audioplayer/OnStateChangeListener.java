@@ -6,5 +6,6 @@ package com.wuzuqing.android.mp3player.audioplayer;
  * 邮箱：wuzuqing@linghit.com
  * 说明：
  */
-public class OnStateChangeListener {
+public interface OnStateChangeListener {
+    void changeState(PlayState newState);
 }

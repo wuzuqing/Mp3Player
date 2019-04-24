@@ -8,7 +8,7 @@ package com.wuzuqing.android.mp3player.audioplayer;
  */
 public enum MediaType {
     // 7571
-    AAC(300, 7453), MP3(180, 8001);
+    AAC(180, 7453), MP3(180, 8001),UNNOT(-1,-1);
     /**
      * 一个文件缓存有多少秒
      */
@@ -43,4 +43,18 @@ public enum MediaType {
         return oneFileTotalSize;
     }
 
+
+    /**
+     *
+     * @param url
+     * @return
+     */
+    public static MediaType get(String url){
+        if (url.endsWith(".aac")){
+            return AAC;
+        }else if (url.endsWith( ".mp3")){
+            return MP3;
+        }
+        return UNNOT;
+    }
 }

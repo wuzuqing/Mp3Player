@@ -1,12 +1,82 @@
-package com.wuzuqing.android.mp3player.audioplayer;
+package com.wuzuqing.android.mp3player.audioplayer.util;
+
+import com.wuzuqing.android.mp3player.audioplayer.AudioFileHeader;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
-public class MP3Helper {
-    // 采样频率对照表
 
+/**
+ * mp3 头部参数工具类
+ */
+public class MP3HeadHelper {
+
+
+    public static AudioFileHeader readADTSHeader(byte[] bytes) {
+        return readADTSHeader(new BitReader(bytes));
+    }
+
+    /**
+     * 从AAC文件流中读取ADTS头部
+     *
+     * @param bitReader
+     * @return 是否读取成功
+     * @throws IOException
+     */
+    public static AudioFileHeader readADTSHeader(BitReader bitReader) {
+
+        try {
+            AudioFileHeader audioFileHeader = new AudioFileHeader();
+            bitReader.position = 0;
+            //同步文件头
+            int syncWord = bitReader.readBits(11); // A
+            audioFileHeader.mpegVersion = bitReader.readBits(2); // B
+            audioFileHeader.layer = bitReader.readBits(2); // C
+            audioFileHeader.protectionAbsent = bitReader.readBits(1); // D
+
+            audioFileHeader.bitrate_index = bitReader.readBits(4);  // E
+            audioFileHeader.sampleFrequencyIndex = bitReader.readBits(2);
+            audioFileHeader.sampleRate = getSimpleRateValue(audioFileHeader.sampleFrequencyIndex, audioFileHeader.mpegVersion); // F
+            bitReader.readBits(1); // G
+            bitReader.readBits(1); // G
+            audioFileHeader.channelconfig = bitReader.readBits(2); // H
+            audioFileHeader.channelValue = audioFileHeader.channelconfig == 3 ? 1 : 2;
+            audioFileHeader.bitrate_value = getBitRate(audioFileHeader.bitrate_index, audioFileHeader.mpegVersion, audioFileHeader.layer);
+            return audioFileHeader;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+
+    /**
+     * 采样率数值
+     *
+     * @param sampleFrequencyIndex 索引
+     * @param mpegVersion          版本
+     * @return
+     */
+    private static int getSimpleRateValue(int sampleFrequencyIndex, int mpegVersion) {
+        int rate = mpegVersion == 3 ? 4 : mpegVersion;
+        switch (sampleFrequencyIndex) {
+            case 0:
+                return 11025 * rate;
+            case 1:
+                return 12000 * rate;
+            case 2:
+                return 8000 * rate;
+        }
+        return 0;
+    }
+
+    /**
+     * 获取编码率数值
+     *
+     * @param value       比特率索引
+     * @param mpegVersion 文件版本
+     * @param layer       层级
+     * @return
+     */
     private static int getBitRate(int value, int mpegVersion, int layer) {
         switch (value) {
             case 1:
@@ -268,76 +338,6 @@ public class MP3Helper {
                         }
                 }
                 break;
-        }
-        return 0;
-    }
-
-
-    public static AdtsHeader readADTSHeader(byte[] bytes) {
-        return readADTSHeader(new BitReader(bytes));
-    }
-//
-//    private static byte otherValue = -125;
-//    private static char[] b = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
-//
-//    private static byte intToHex(int n) {
-//        if (n <= 0) {
-//            String toHexString = Integer.toHexString(n);
-//            LogUtils.d("intToHex:" + toHexString);
-//
-//            return otherValue;
-//        }
-//        StringBuffer s = new StringBuffer();
-//        String a;
-//        while (n != 0) {
-//            s = s.append(b[n % 16]);
-//            n = n / 16;
-//        }
-//        a = s.reverse().toString();
-//        return Byte.parseByte(a);
-//    }
-
-    /**
-     * 从AAC文件流中读取ADTS头部
-     *
-     * @param bitReader
-     * @return 是否读取成功
-     * @throws IOException
-     */
-    public static AdtsHeader readADTSHeader(BitReader bitReader) {
-
-        try {
-            AdtsHeader adtsHeader = new AdtsHeader();
-            bitReader.position = 0;
-            int syncWord = bitReader.readBits(11); // A
-            adtsHeader.mpegVersion = bitReader.readBits(2); // B
-            adtsHeader.layer = bitReader.readBits(2); // C
-            adtsHeader.protectionAbsent = bitReader.readBits(1); // D
-
-            adtsHeader.bitrate_index = bitReader.readBits(4);  // E
-            adtsHeader.sampleFrequencyIndex = bitReader.readBits(2);
-            adtsHeader.sampleRate = getSimpleRate(adtsHeader.sampleFrequencyIndex, adtsHeader.mpegVersion); // F
-            bitReader.readBits(1); // G
-            bitReader.readBits(1); // G
-            adtsHeader.channelconfig = bitReader.readBits(2); // H
-            adtsHeader.channelValue = adtsHeader.channelconfig == 3 ? 1 : 2;
-            adtsHeader.bitrate_value = getBitRate(adtsHeader.bitrate_index, adtsHeader.mpegVersion, adtsHeader.layer);
-            return adtsHeader;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    private static int getSimpleRate(int sampleFrequencyIndex, int mpegVersion) {
-        int rate = mpegVersion == 3 ? 4 : mpegVersion;
-        switch (sampleFrequencyIndex) {
-            case 0:
-                return 11025 * rate;
-            case 1:
-                return 12000 * rate;
-            case 2:
-                return 8000 * rate;
         }
         return 0;
     }

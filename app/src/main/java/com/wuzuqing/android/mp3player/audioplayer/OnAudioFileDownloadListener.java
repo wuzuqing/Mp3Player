@@ -22,4 +22,6 @@ public interface OnAudioFileDownloadListener {
      * @param error     失败原因
      */
     void onError(AudioInfo audioInfo, AudioError error);
+
+    void onLoading();
 }

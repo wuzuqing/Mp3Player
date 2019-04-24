@@ -50,6 +50,11 @@ public class JavaTest {
             public void onError(AudioInfo audioInfo, AudioError code) {
 
             }
+
+            @Override
+            public void onLoading() {
+
+            }
         };
 //        download.download(audioInfo, index, finishListener);
         LinkedList<Integer> indexs = new LinkedList<>();

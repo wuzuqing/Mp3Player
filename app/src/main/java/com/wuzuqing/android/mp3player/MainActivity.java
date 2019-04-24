@@ -4,19 +4,26 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.wuzuqing.android.mp3player.audioplayer.IPlayer;
-import com.wuzuqing.android.mp3player.audioplayer.LogUtils;
-import com.wuzuqing.android.mp3player.audioplayer.LargeAudioPlayer;
+import com.wuzuqing.android.mp3player.audioplayer.OnProgressChangeListener;
+import com.wuzuqing.android.mp3player.audioplayer.OnStateChangeListener;
+import com.wuzuqing.android.mp3player.audioplayer.PlayState;
+import com.wuzuqing.android.mp3player.audioplayer.PlayerProgressManager;
+import com.wuzuqing.android.mp3player.audioplayer.SimpleIPlayer;
+import com.wuzuqing.android.mp3player.audioplayer.util.LogUtils;
 
 public class MainActivity extends AppCompatActivity {
 
-    IPlayer vSimplePlayer = new LargeAudioPlayer();
+    IPlayer vSimplePlayer = new SimpleIPlayer();
     private EditText vEditText, vEtIndex;
     private SeekBar vSeekBar;
+    private ProgressBar progressBar;
     TextView logView;
+    private TextView vTotalView, vCurrentView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,10 +32,31 @@ public class MainActivity extends AppCompatActivity {
         vEditText = findViewById(R.id.et_length);
         vEtIndex = findViewById(R.id.et_index);
         vSeekBar = findViewById(R.id.seekTo);
+        vTotalView = findViewById(R.id.tvTotalTime);
+        vCurrentView = findViewById(R.id.tvCurrentTime);
+        progressBar = findViewById(R.id.progressBar);
         logView = findViewById(R.id.log);
-        vSimplePlayer.bindSeekBar(vSeekBar);
+        PlayerProgressManager.get().bindSeekBar(vSeekBar);
+        vSimplePlayer.setOnStateChangeListener(new OnStateChangeListener() {
+            @Override
+            public void changeState(final PlayState newState) {
+                LogUtils.d("changeState:" + newState);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (newState == PlayState.LOADING) {
+                            progressBar.setVisibility(View.VISIBLE);
+                        } else {
+                            progressBar.setVisibility(View.GONE);
+                        }
+                    }
+                });
+            }
+        });
         setUrlToView(DataUtils.urls[0]);
-        vSimplePlayer.bindTextView((TextView) findViewById(R.id.tvCurrentTime), (TextView) findViewById(R.id.tvTotalTime));
+        PlayerProgressManager.get().registerOnProgressChangeListener(vOnProgressChangeListener);
+//        PlayerProgressManager.get().bindTextView((TextView) findViewById(R.id.tvCurrentTime), (TextView) findViewById(R.id.tvTotalTime));
+
         LogUtils.setvOnLogChangeListener(new LogUtils.OnLogChangeListener() {
             @Override
             public void newLog(final String log) {
@@ -40,7 +68,21 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
         });
+        PermissionUtil permissionUtil = new PermissionUtil(this);
+        permissionUtil.requestStoragePermission(1000);
     }
+
+    private OnProgressChangeListener vOnProgressChangeListener = new OnProgressChangeListener() {
+        @Override
+        public void changeDuration(String timeStr) {
+            vTotalView.setText(timeStr);
+        }
+
+        @Override
+        public void changeProgress(int position, String timeStr) {
+            vCurrentView.setText(timeStr);
+        }
+    };
 
     public void start(View view) {
         int index = Integer.valueOf(vEtIndex.getText().toString());
@@ -80,10 +122,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void zjSpeed(View view) {
-        vSimplePlayer.changeSpeed(true,0.2f);
+        vSimplePlayer.changeSpeed(true, 0.2f);
     }
 
     public void jsSpeed(View view) {
-        vSimplePlayer.changeSpeed(false,0.2f);
+        vSimplePlayer.changeSpeed(false, 0.2f);
+    }
+
+    @Override
+    protected void onDestroy() {
+        PlayerProgressManager.get().unRegisterOnProgressChangeListener(vOnProgressChangeListener);
     }
 }

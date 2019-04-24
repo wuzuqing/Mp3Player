@@ -1,5 +1,12 @@
 package com.wuzuqing.android.mp3player;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.content.ContextCompat;
+
+import java.util.List;
+
 public class DataUtils {
 
 //    public static final String testUrl = "http://m10.music.126.net/20190301114038/0c70ade6aea4e1edf06be7510e266d91/ymusic/7c7e/dca6/533e/3f0d856d1d4d8c44ec4b526a569ab820.mp3";

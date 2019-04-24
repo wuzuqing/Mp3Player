@@ -1,8 +1,5 @@
 package com.wuzuqing.android.mp3player.audioplayer;
 
-import android.widget.SeekBar;
-import android.widget.TextView;
-
 /**
  * 作者：士元
  * 时间：2019/3/4 10:12
@@ -25,6 +22,12 @@ public interface IPlayer {
      */
     void playWithPos(String url, int offset);
 
+    /**
+     * 播放网络文件并移动到指定位置
+     *
+     * @param offset
+     */
+    void seekTo( int offset);
     /**
      * 暂停后恢复播放
      */
@@ -70,21 +73,6 @@ public interface IPlayer {
     boolean isPlaying();
 
     /**
-     * 绑定需要显示时间进度的控件
-     *
-     * @param currentTextView
-     * @param totalTextView
-     */
-    void bindTextView(TextView currentTextView, TextView totalTextView);
-
-    /**
-     * 绑定进度条，已实现拖动进度条的功能
-     *
-     * @param seekBar
-     */
-    void bindSeekBar(SeekBar seekBar);
-
-    /**
      * 改变播放速度 仅支持sdk 23 及以上
      *
      * @param isAdd true  加速
@@ -96,4 +84,7 @@ public interface IPlayer {
      * 恢复默认播放速度
      */
     void resetSpeed();
+
+    void setOnStateChangeListener(OnStateChangeListener listener);
+
 }

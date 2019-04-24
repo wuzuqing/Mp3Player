@@ -31,6 +31,7 @@ public class AudioCache {
         if (!vAudioInfoMap.containsKey(url)) {
             audioInfo = new AudioInfo();
             audioInfo.setUrl(url);
+            audioInfo.setMediaType(MediaType.get(url));
             vAudioInfoMap.put(url, audioInfo);
         } else {
             audioInfo = vAudioInfoMap.get(url);

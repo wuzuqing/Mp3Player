@@ -1,5 +1,7 @@
 package com.wuzuqing.android.mp3player.audioplayer;
 
+import com.wuzuqing.android.mp3player.audioplayer.util.LogUtils;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -30,7 +32,7 @@ import okhttp3.Response;
  */
 public class AudioCacheDownload {
 
-    private static final boolean PRINT_BYTES = true;
+    private static final boolean PRINT_BYTES = false;
 
     public static boolean isAndroid = true;
     private OkHttpClient mOkHttpClient;

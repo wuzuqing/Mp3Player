@@ -1,8 +1,8 @@
 package com.wuzuqing.android.mp3player;
 
-import com.wuzuqing.android.mp3player.audioplayer.AACHelper;
-import com.wuzuqing.android.mp3player.audioplayer.AdtsHeader;
-import com.wuzuqing.android.mp3player.audioplayer.BitReader;
+import com.wuzuqing.android.mp3player.audioplayer.util.AACHeadHelper;
+import com.wuzuqing.android.mp3player.audioplayer.AudioFileHeader;
+import com.wuzuqing.android.mp3player.audioplayer.util.BitReader;
 
 public class Test1 {
 
@@ -12,7 +12,7 @@ public class Test1 {
 
         try {
             byte[] bytes = new byte[]{-1, -15, 76, 64, 0, 0, 0};
-            AdtsHeader header = AACHelper.readADTSHeader(new BitReader(bytes));
+            AudioFileHeader header = AACHeadHelper.readADTSHeader(new BitReader(bytes));
             System.out.println(header);
         } catch (Exception e) {
             e.printStackTrace();

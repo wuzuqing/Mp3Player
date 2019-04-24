@@ -1,8 +1,11 @@
-package com.wuzuqing.android.mp3player.audioplayer;
+package com.wuzuqing.android.mp3player.audioplayer.util;
 
 
 import java.util.Arrays;
 
+/**
+ * 从byte数组读取bit的工具类
+ */
 public class BitReader {
     public int position;
     public byte[] buffer;

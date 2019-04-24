@@ -1,6 +1,10 @@
 package com.wuzuqing.android.mp3player.audioplayer;
 
 
+import com.wuzuqing.android.mp3player.audioplayer.util.AACHeadHelper;
+import com.wuzuqing.android.mp3player.audioplayer.util.LogUtils;
+import com.wuzuqing.android.mp3player.audioplayer.util.MP3HeadHelper;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -43,7 +47,7 @@ public class AudioInfo {
      */
     private boolean isInit;
 
-    private AACHelper aacHelper;
+    private  AudioFileHeader audioFileHeader = null;
 
     public AudioInfo() {
 
@@ -86,27 +90,22 @@ public class AudioInfo {
         isInit = true;
         float duration = 0f;
         setContentLength(contentLength);
-        if (url.contains("aac")) {
-            vMediaType = MediaType.AAC;
+
+        if (vMediaType == MediaType.AAC) {
             String name = url.substring(url.lastIndexOf("_") + 1, url.lastIndexOf("."));
             finishFileName = String.format("%s_over.aac", name);
-            AdtsHeader adtsHeader = AACHelper.readADTSHeader(bytes);
-            LogUtils.d("AdtsHeader:" + adtsHeader);
-            duration = (contentLength * (1024000f / adtsHeader.sampleRate) / adtsHeader.frameLength);
-            headBytesStr = Arrays.copyOf(bytes,4);
-        } else if (url.contains("mp3")) {
-            vMediaType = MediaType.MP3;
+            audioFileHeader = AACHeadHelper.readADTSHeader(bytes);
+            duration = (contentLength * (1024000f / audioFileHeader.sampleRate) / audioFileHeader.frameLength)/1000;
+            headBytesStr = Arrays.copyOf(bytes, 4);
+        } else if (vMediaType == MediaType.MP3) {
             String name = url.substring(url.lastIndexOf("/") + 1, url.lastIndexOf("."));
             finishFileName = String.format("%s_over.mp3", name);
-            duration = (contentLength * 1f /vMediaType.getOneSecondSize());
-//            AdtsHeader adtsHeader = MP3Helper.readADTSHeader(new byte[]{54,53,53,45});
-            AdtsHeader adtsHeader = MP3Helper.readADTSHeader(bytes);
-            LogUtils.d("AdtsHeader:" + adtsHeader);
+            audioFileHeader = MP3HeadHelper.readADTSHeader(bytes);
+            duration = (contentLength * 8f / audioFileHeader.getBitrate_value());
             headBytesStr = bytes;
         }
-
+        LogUtils.d("AudioFileHeader:" + audioFileHeader);
         setUrl(url);
-
 
         splitCount = (int) Math.ceil(duration / vMediaType.getOneFileCacheSecond());
         this.duration = (int) (duration * 1000);
@@ -119,7 +118,7 @@ public class AudioInfo {
             }
             rangeInfoList.put(i, rangeInfo);
         }
-        LogUtils.d("duration:" + duration + " splitCount:" + splitCount + Arrays.toString(headBytesStr) + " url:"+url);
+        LogUtils.d("duration:" + duration + " splitCount:" + splitCount + Arrays.toString(headBytesStr) + " url:" + url);
     }
 
 

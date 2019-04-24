@@ -7,5 +7,5 @@ package com.wuzuqing.android.mp3player.audioplayer;
  * 说明：
  */
 public enum PlayState {
-    NONE, START, PAUSE, STOP, ERROR, PREPARE
+    NONE, START, PAUSE, STOP, ERROR, PREPARE,LOADING
 }

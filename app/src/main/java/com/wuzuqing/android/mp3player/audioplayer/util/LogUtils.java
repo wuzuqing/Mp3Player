@@ -1,4 +1,4 @@
-package com.wuzuqing.android.mp3player.audioplayer;
+package com.wuzuqing.android.mp3player.audioplayer.util;
 
 /**
  * 作者：士元

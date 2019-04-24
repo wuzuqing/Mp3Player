@@ -1,6 +1,9 @@
 package com.wuzuqing.android.mp3player.audioplayer;
 
-public class AdtsHeader {
+/**
+ * 音频文件头部参数
+ */
+public class AudioFileHeader {
     int getSize() {
         return 7 + (protectionAbsent == 0 ? 2 : 0);
     }
@@ -8,63 +11,63 @@ public class AdtsHeader {
     /**
      * 采样率的下标
      */
-    int sampleFrequencyIndex;
+  public   int sampleFrequencyIndex;
     /**
      * MPEG Version: 0 for MPEG-4，1 for MPEG-2
      */
-    int mpegVersion;
+    public int mpegVersion;
     /**
      * always: '00'
      */
-    int layer;
+    public  int layer;
     /**
      * Warning, set to 1 if there is no CRC and 0 if there is CRC
      */
-    int protectionAbsent;
+    public  int protectionAbsent;
     /**
      * 表示使用哪个级别的AAC，如01 Low Complexity(LC) -- AAC LC
      */
-    int profile;
+    public  int profile;
     /**
      * 采样率
      */
-    int sampleRate;
+    public int sampleRate;
     /**
      * 声道数，比如2表示立体声双声道
      */
-    int channelconfig;
+    public  int channelconfig;
 
     /**
      * 声道数，比如2表示立体声双声道
      */
-    int channelValue;
+    public   int channelValue;
 
-    int original;
-    int home;
+    public  int original;
+    public  int home;
 
-    int copyrightedStream;
-    int copyrightStart;
+    public int copyrightedStream;
+    public  int copyrightStart;
     /**
      * 位率
      */
-    int bitrate_index;
+    public  int bitrate_index;
     /**
      * 位率
      */
-    int bitrate_value;
+    public int bitrate_value;
     /**
      * 一个ADTS帧的长度包括ADTS头和AAC原始流。frame length, this value must include 7 or 9 bytes of header length:
      */
-    int frameLength;
+    public  int frameLength;
     /**
      * 0x7FF 说明是码率可变的码流。
      */
-    int bufferFullness;
+    public int bufferFullness;
     /**
      * 表示ADTS帧中有number_of_raw_data_blocks_in_frame + 1个AAC原始帧。
      * 所以说number_of_raw_data_blocks_in_frame == 0 表示说ADTS帧中有一个AAC数据块。
      */
-    int numAacFramesPerAdtsFrame;
+    public  int numAacFramesPerAdtsFrame;
 
     public int getBitrate_value() {
         return bitrate_value;
@@ -84,7 +87,7 @@ public class AdtsHeader {
 
     @Override
     public String toString() {
-        return "AdtsHeader{" +
+        return "AudioFileHeader{" +
                 "sampleFrequencyIndex=" + sampleFrequencyIndex +
                 ", mpegVersion=" + mpegVersion +
                 ", layer=" + layer +
