@@ -40,6 +40,13 @@
             android:onClick="pause"
             android:text="暂停" />
 
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -52,7 +59,6 @@
             android:onClick="stop"
             android:text="结束" />
     </LinearLayout>
-
     <SeekBar
         android:id="@+id/seekTo"
         android:layout_width="match_parent"

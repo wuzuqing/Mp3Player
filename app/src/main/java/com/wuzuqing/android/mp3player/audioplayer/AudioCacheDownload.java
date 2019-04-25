@@ -2,13 +2,16 @@ package com.wuzuqing.android.mp3player.audioplayer;
 
 import com.wuzuqing.android.mp3player.audioplayer.util.LogUtils;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ExecutorService;
@@ -120,16 +123,19 @@ public class AudioCacheDownload {
             LogUtils.d("downloadIndex:hasCache ok" + rangeInfo);
             return;
         }
+        MediaType mediaType = audioInfo.getMediaType();
         // -1, -15, 76, 64 aac
-        Response response = buildResponse(audioInfo.getUrl(), rangeInfo.getFrom(), rangeInfo.getTo());
+        Response response = buildResponse(audioInfo.getUrl(), rangeInfo.getFrom(), rangeInfo.getTo() + 500);
         InputStream stream = response.body().byteStream();
         File file = new File(cacheFileDir, rangeInfo.getFileName());
 
         FileOutputStream fileOutputStream = new FileOutputStream(file);
         byte[] bytes = new byte[4096];
         int len = 0;
+        int totalLength = 0;
         if (audioInfo.getMediaType() == MediaType.AAC) {
             int readOneFrame = stream.read(bytes);
+            totalLength = readOneFrame;
             printBytes(bytes);
             int firstIndex = findFirstIndex(bytes, audioInfo.getHeadBytesStr());
             if (isAndroid) {
@@ -138,22 +144,35 @@ public class AudioCacheDownload {
             } else {
                 fileOutputStream.write(bytes, firstIndex == -1 ? 0 : firstIndex, readOneFrame);
             }
-            if (firstIndex > 0) {
-                byte[] preDf = Arrays.copyOfRange(bytes, 0, firstIndex - 1);
-                FileOutputStream preDfFileOutputStream = new FileOutputStream(new File(cacheFileDir, rangeInfo.getPreDefectFileName()));
-                preDfFileOutputStream.write(preDf);
-                preDfFileOutputStream.close();
-            }
             LogUtils.d("downloadIndex: firstIndex" + firstIndex + " readOneFrame:" + readOneFrame);
         }
 
         int index = 0;
-        while ((len = stream.read(bytes)) != -1) {
+        int readLength = bytes.length;
+        int maxLength = (int) (mediaType.getOneFileTotalSize());
+        while ((len = stream.read(bytes, 0, readLength)) != -1) {
             if (index < 3) {
                 printBytes(bytes);
                 index++;
             }
             fileOutputStream.write(bytes, 0, len);
+            totalLength += len;
+            if (readLength != bytes.length && readLength == len) {
+                break;
+            }
+            //计算一个文件的大小
+            if (totalLength + readLength > maxLength) {
+                readLength = (maxLength - totalLength);
+            }
+        }
+        len = stream.read(bytes);
+        boolean hasBytes = len != -1;
+        if (hasBytes) {
+            int firstIndex = findFirstIndex(bytes, audioInfo.getHeadBytesStr());
+            if (firstIndex > 0) {
+                fileOutputStream.write(bytes, 0, firstIndex);
+            }
+            LogUtils.d("firstIndex:" + firstIndex);
         }
         fileOutputStream.flush();
         fileOutputStream.close();
@@ -171,15 +190,15 @@ public class AudioCacheDownload {
         return -1;
     }
 
-//    private int findLastIndex(byte[] bytes, byte[] headBytesStr, int len) {
-//        int maxLength = len - headBytesStr.length;
-//        for (int length = maxLength; length > 0; length--) {
-//            if (check(bytes, length, headBytesStr)) {
-//                return length;
-//            }
-//        }
-//        return -1;
-//    }
+    private int findLastIndex(byte[] bytes, byte[] headBytesStr, int len) {
+        int maxLength = len - headBytesStr.length;
+        for (int length = maxLength; length > 0; length--) {
+            if (check(bytes, length, headBytesStr)) {
+                return length;
+            }
+        }
+        return -1;
+    }
 
     private boolean check(byte[] bytes, int startIndex, byte[] headBytesStr) {
         for (int i = 0; i < headBytesStr.length; i++) {

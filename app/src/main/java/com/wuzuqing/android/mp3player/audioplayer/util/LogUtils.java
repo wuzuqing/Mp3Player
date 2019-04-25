@@ -1,5 +1,7 @@
 package com.wuzuqing.android.mp3player.audioplayer.util;
 
+import android.util.Log;
+
 /**
  * 作者：士元
  * 时间：2019/2/23 15:23
@@ -11,13 +13,13 @@ public class LogUtils {
     public static StringBuilder sb = new StringBuilder();
 
     public static void d(String msg) {
-        System.out.println(String.format("%s : %s", TAG, msg));
+//        System.out.println(String.format("%s : %s", TAG, msg));
 
         sb.append(msg).append("\n");
         if (vOnLogChangeListener != null) {
             vOnLogChangeListener.newLog(sb.toString());
         }
-//        Log.d(TAG, msg);
+        Log.d(TAG, msg);
     }
 
     private static OnLogChangeListener vOnLogChangeListener;

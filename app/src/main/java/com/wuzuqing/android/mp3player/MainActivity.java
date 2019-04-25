@@ -22,7 +22,6 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     TextView logView;
     private TextView vTotalView, vCurrentView;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -87,6 +86,14 @@ public class MainActivity extends AppCompatActivity {
         String url = DataUtils.urls[index % DataUtils.urls.length];
         MusicPlayHelper.get().playUrl(url);
         setUrlToView(url);
+//        vTestMediaPlayer.playOne( new File(Environment.getExternalStorageDirectory(),"/cacheAac/a_0_180.mp3").getAbsolutePath());
+//
+//        vEditText.postDelayed(new Runnable() {
+//            @Override
+//            public void run() {
+//                vTestMediaPlayer.playTwo( new File(Environment.getExternalStorageDirectory(),"/cacheAac/a_1_180.mp3").getAbsolutePath());
+//            }
+//        },1000);
     }
 
     private void setUrlToView(String url) {
