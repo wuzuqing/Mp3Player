@@ -62,7 +62,7 @@ public class LargeAudioPlayer implements IPlayer {
     };
 
     private void moveToNext(MediaPlayer mp) {
-        if (vPlayState==PlayState.PAUSE){
+        if (vPlayState == PlayState.PAUSE) {
             return;
         }
         currentIndex++;
@@ -81,7 +81,6 @@ public class LargeAudioPlayer implements IPlayer {
         mp.reset();
         resetUpdateProgressHandler();
         isPrepared = true;
-        hasNextDownloadFinishFile = false;
         hasDownloadNext = false;
     }
 
@@ -115,14 +114,14 @@ public class LargeAudioPlayer implements IPlayer {
             if (hasNextPrepared && vAudioInfo != null && second > vAudioInfo.getMediaType().getOneFileCacheSecond() - 5) {
                 moveToNext(mp);
             }
-            LogUtils.d(" what:" + what + " extra:" + extra + " second:" + second + " hasNextDownloadFinishFile:" + hasNextDownloadFinishFile + " isPrepared:" + isPrepared);
+            LogUtils.d(" what:" + what + " extra:" + extra + " second:" + second + " isPrepared:" + isPrepared);
             return true;
         }
     };
 
 
     public void resume() {
-        if (isPrepared) {
+        if (isPrepared && vCurrentMediaPlayer != null) {
             vCurrentMediaPlayer.start();
             resetUpdateProgressHandler();
             _innerCallNewState(PlayState.START);
@@ -140,14 +139,24 @@ public class LargeAudioPlayer implements IPlayer {
     }
 
     public void pause() {
-        if (isPrepared) {
+        _innerPause(true);
+    }
+
+    private void _innerPause(boolean callState) {
+        if (isPrepared && vCurrentMediaPlayer != null) {
             vCurrentMediaPlayer.pause();
             PlayerProgressManager.get().pause();
-            _innerCallNewState(PlayState.PAUSE);
+            if (callState) {
+                _innerCallNewState(PlayState.PAUSE);
+            }
         }
     }
 
     public void stop() {
+        _innerStop(true);
+    }
+
+    private void _innerStop(boolean callState) {
         if (vCurrentMediaPlayer != null && isPrepared) {
             LogUtils.d("stop: " + currentIndex + " / " + vAudioInfo.getSplitCount() + " isPrepared:" + isPrepared);
             vCurrentMediaPlayer.stop();
@@ -155,8 +164,9 @@ public class LargeAudioPlayer implements IPlayer {
             vCurrentMediaPlayer = null;
             isPrepared = false;
             PlayerProgressManager.get().pause();
-            _innerCallNewState(PlayState.STOP);
-//            PlayerProgressManager.get().setViewZero();
+            if (callState) {
+                _innerCallNewState(PlayState.STOP);
+            }
         }
         lastUrl = null;
     }
@@ -166,13 +176,15 @@ public class LargeAudioPlayer implements IPlayer {
         currentIndex = 0;
         playWithPos(url, -1);
     }
+
     private long userClickSeekToTime;
+
     public void seekToWithOffset(boolean isAdd, int offset) {
         long now = System.currentTimeMillis();
-        if (userClickSeekToTime+IMusicConfig.USER_CLICK_SEEK_TO_TIME>now){
+        if (userClickSeekToTime + IMusicConfig.USER_CLICK_SEEK_TO_TIME > now) {
             return;
         }
-        LogUtils.d("seekToWithOffset:" + offset);
+
         if (isPrepared && vCurrentMediaPlayer != null) {
             userClickSeekToTime = now;
             int currentPosition = vCurrentMediaPlayer.getCurrentPosition();
@@ -185,15 +197,19 @@ public class LargeAudioPlayer implements IPlayer {
                 realPosition -= offset;
                 realPosition = realPosition < 0 ? 0 : realPosition;
             }
-            //剩余2秒,结束
-            if (realPosition+IMusicConfig.STOP_TRACKING_TOUCH_RANGE>=getDuration()){
-                end();
+
+            int oldIndex = currentIndex;
+            int newIndex = (int) (realPosition / (1f * oneFileDuration));
+            LogUtils.d("seekToWithOffset:" + offset + "oldIndex:"+oldIndex + " newIndex:"+newIndex);
+            if (oldIndex == newIndex && vCurrentMediaPlayer != null) {
+                int seekToPos = realPosition % oneFileDuration;
+                vCurrentMediaPlayer.seekTo(seekToPos);
                 return;
             }
+
             if (hasNextPrepared) {
                 hasNextPrepared = false;
                 hasDownloadNext = false;
-                hasNextDownloadFinishFile = false;
                 if (vCurrentMediaPlayer == vOneMediaPlayer) {
                     vTwoMediaPlayer.reset();
                 } else {
@@ -201,12 +217,12 @@ public class LargeAudioPlayer implements IPlayer {
                 }
                 vCurrentMediaPlayer.setNextMediaPlayer(null);
             }
-            innerStartToDownload(realPosition, vAudioInfo);
+            innerStartToDownload(realPosition);
         }
     }
 
 
-    private void innerStart(String url, boolean a) {
+    private void innerStart(String url) {
         boolean isOne = vCurrentMediaPlayer == null || vCurrentMediaPlayer == vTwoMediaPlayer;
         if (isOne) {
             initOnePlayer();
@@ -218,7 +234,7 @@ public class LargeAudioPlayer implements IPlayer {
             if (isOne) {
                 vOneMediaPlayer.reset();
                 vOneMediaPlayer.setDataSource(url);
-                _innerCallNewState(PlayState.PREPARE);
+//                _innerCallNewState(PlayState.PREPARE);
                 vOneMediaPlayer.prepareAsync();
                 lastUrl = url;
             } else {
@@ -249,20 +265,25 @@ public class LargeAudioPlayer implements IPlayer {
      * @param pos 秒
      */
     public void playWithPos(String url, final int pos) {
+        LogUtils.d("playWithPos:" + pos);
+        if (isPrepared && pos + IMusicConfig.STOP_TRACKING_TOUCH_RANGE >= getDuration()) {
+            end();
+            return;
+        }
         this.touchToPos = pos;
 
         this.vAudioInfo = AudioCache.getInstance().getAudioInfo(url);
-        LogUtils.d("playWithPos:" + pos);
+
         if (!vAudioInfo.isInit()) {
             //初始化
             AudioCacheDownload.getInstance().syncInitContentLength(vAudioInfo, vAudioFileInitListener);
         } else {
             //开始下载
-            innerStartToDownload(pos, vAudioInfo);
+            innerStartToDownload(pos);
         }
     }
 
-    private void innerStartToDownload(int pos, AudioInfo audioInfo) {
+    private void innerStartToDownload(int pos) {
         int oldIndex = currentIndex;
         if (pos == -1) {
             seekToPos = -1;
@@ -272,7 +293,7 @@ public class LargeAudioPlayer implements IPlayer {
             seekToPos = pos % (int) ms;
         }
         if (oldIndex != currentIndex) {
-            pause();
+            _innerPause(false);
         }
         LogUtils.d(" innerStartToDownload seekToPos:" + seekToPos + " pos:" + pos + " currentIndex:" + currentIndex);
         download(currentIndex, vOnAudioFileDownloadListener);
@@ -280,14 +301,14 @@ public class LargeAudioPlayer implements IPlayer {
 
     private void end() {
         stop();
-        PlayerProgressManager.get().setDurationStr(getDuration());
+        PlayerProgressManager.get().setProgressStr(getDuration());
     }
 
 
     private OnAudioFileInitListener vAudioFileInitListener = new OnAudioFileInitListener() {
         @Override
         public void onInit(AudioInfo audioInfo) {
-            innerStartToDownload(touchToPos, audioInfo);
+            innerStartToDownload(touchToPos);
         }
     };
 
@@ -314,8 +335,7 @@ public class LargeAudioPlayer implements IPlayer {
 
         @Override
         public void onFinish(AudioInfo audioInfo, RangeInfo rangeInfo) {
-            hasNextDownloadFinishFile = true;
-            innerStart(AudioCacheDownload.getInstance().getRangeInfoFileName(rangeInfo), false);
+            innerStart(AudioCacheDownload.getInstance().getRangeInfoFileName(rangeInfo));
         }
 
         @Override
@@ -325,7 +345,6 @@ public class LargeAudioPlayer implements IPlayer {
 
         @Override
         public void onLoading() {
-
         }
     };
     private int oneFileDuration = 0;
@@ -340,17 +359,19 @@ public class LargeAudioPlayer implements IPlayer {
                 vCurrentMediaPlayer.start();
                 resetUpdateProgressHandler();
             } else {
-                innerStart(url, true);
+                innerStart(url);
             }
         } else {
-            stop();
-            innerStart(url, true);
+            _innerStop(false);
+            innerStart(url);
         }
     }
 
     @Override
     public void notifyProgress(int progress) {
-        checkNeedDownload(vAudioInfo, vCurrentMediaPlayer.getCurrentPosition(), oneFileDuration);
+        if (isPrepared && vCurrentMediaPlayer != null && vAudioInfo != null) {
+            checkNeedDownload(vAudioInfo, vCurrentMediaPlayer.getCurrentPosition(), oneFileDuration);
+        }
     }
 
     @Override
@@ -363,7 +384,6 @@ public class LargeAudioPlayer implements IPlayer {
     }
 
     private boolean hasDownloadNext;
-    private boolean hasNextDownloadFinishFile = false;
 
     private boolean hasNextPrepared = false;
 
@@ -382,14 +402,13 @@ public class LargeAudioPlayer implements IPlayer {
         if (!isLoadEnd && !hasDownloadNext && position + IMusicConfig.NEXT_FILE_LOAD_TIME > duration) {
             hasDownloadNext = true;
             int nextIndex = currentIndex + 1;
-            hasNextDownloadFinishFile = false;
             hasNextPrepared = false;
             download(nextIndex, vOnAudioFileDownloadNextListener);
         }
     }
 
     private void download(int index, OnAudioFileDownloadListener listener) {
-        listener.onLoading();
+
         AudioCacheDownload.getInstance().download(vAudioInfo, index, listener);
     }
 
@@ -446,7 +465,7 @@ public class LargeAudioPlayer implements IPlayer {
 
     @Override
     public void seekTo(int offset) {
-        pause();
+        _innerPause(false);
         playWithPos(vAudioInfo.getUrl(), offset);
     }
 

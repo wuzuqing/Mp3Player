@@ -121,7 +121,7 @@ public class AudioCacheDownload {
             duration = (contentLength * 8f / audioInfo.getAudioFileHeader().getBitrate_value());
             audioInfo.setHeadBytesStr(bytes);
         }
-        LogUtils.d("AudioFileHeader:" + audioInfo.getAudioFileHeader());
+//        LogUtils.d("AudioFileHeader:" + audioInfo.getAudioFileHeader());
 
         int splitCount = (int) Math.ceil(duration / audioInfo.getMediaType().getOneFileCacheSecond());
         audioInfo.setSplitCount(splitCount);
@@ -138,7 +138,7 @@ public class AudioCacheDownload {
             rangeInfoList.put(i, rangeInfo);
         }
         audioInfo.setRangeInfoList(rangeInfoList);
-        LogUtils.d("duration:" + duration + " splitCount:" + splitCount + Arrays.toString(audioInfo.getHeadBytesStr()) + " url:" + url);
+        LogUtils.d("duration:" + duration + " splitCount:" + splitCount +  "\nurl:" + url);
     }
 
 
@@ -214,7 +214,7 @@ public class AudioCacheDownload {
             } else {
                 fileOutputStream.write(bytes, firstIndex == -1 ? 0 : firstIndex, readOneFrame);
             }
-            LogUtils.d("downloadIndex: firstIndex" + firstIndex + " readOneFrame:" + readOneFrame);
+//            LogUtils.d("downloadIndex: firstIndex" + firstIndex + " readOneFrame:" + readOneFrame);
         }
 
         int index = 0;
@@ -245,7 +245,7 @@ public class AudioCacheDownload {
                 if (firstIndex > 0) {
                     fileOutputStream.write(bytes, 0, firstIndex);
                 }
-                LogUtils.d("firstIndex:" + firstIndex);
+//                LogUtils.d("firstIndex:" + firstIndex);
             }
         }
         fileOutputStream.flush();
@@ -313,9 +313,9 @@ public class AudioCacheDownload {
     }
 
     public void clearCacheFile() {
-        if (cacheFileDir != null ) {
-           deleteDirWithFile(cacheFileDir,false);
-           LogUtils.d("deleteDirWithFile success");
+        if (cacheFileDir != null) {
+            deleteDirWithFile(cacheFileDir, false);
+            LogUtils.d("deleteDirWithFile success");
         }
     }
 
@@ -355,9 +355,7 @@ public class AudioCacheDownload {
                 }
                 RangeInfo rangeInfo = audioInfo.getRangeInfoList().get(index);
 
-                if (!getInstance().checkFileExists(rangeInfo.getFileName())) {
-                    AudioCacheDownload.getInstance().downloadIndex(audioInfo, rangeInfo);
-                }
+                AudioCacheDownload.getInstance().downloadIndex(audioInfo, rangeInfo);
                 LogUtils.d("download Used: " + (System.currentTimeMillis() - start) + " info:" + rangeInfo);
                 if (listener != null) {
                     listener.onFinish(audioInfo, rangeInfo);
@@ -387,6 +385,13 @@ public class AudioCacheDownload {
             if (audioInfo.isInit() && index >= audioInfo.getSplitCount()) {
                 return;
             }
+            RangeInfo rangeInfo = audioInfo.getRangeInfo(index);
+            if (getInstance().checkFileExists(rangeInfo.getFileName())) {
+                listener.onFinish(audioInfo, rangeInfo);
+                LogUtils.d("downloadIndex:hasCache ok" + rangeInfo);
+                return;
+            }
+            listener.onLoading();
             vDownloadTasks.add(new DownloadTask(audioInfo, index, listener));
             if (!isRunning) {
                 doWork();

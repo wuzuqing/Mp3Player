@@ -9,11 +9,12 @@ public class Test1 {
     public static void main(String[] args) {
         //-1, -15, 76, 64, 19, -30, 96
         //-1, -7, 12, 64, 22, -97, -4
-
+        String text = "          ";
         try {
-            byte[] bytes = new byte[]{-1, -15, 76, 64, 0, 0, 0};
-            AudioFileHeader header = AACHeadHelper.readADTSHeader(new BitReader(bytes));
-            System.out.println(header);
+            System.out.println("text length:"+text.length());
+//            byte[] bytes = new byte[]{-1, -15, 76, 64, 0, 0, 0};
+//            AudioFileHeader header = AACHeadHelper.readADTSHeader(new BitReader(bytes));
+//            System.out.println(header);
         } catch (Exception e) {
             e.printStackTrace();
         }
