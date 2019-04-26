@@ -8,7 +8,7 @@ package com.wuzuqing.android.mp3player.audioplayer;
  */
 public enum MediaType {
     // 7571
-    AAC(60, 7453), MP3(180, 8001),UNNOT(-1,-1);
+    AAC(180, 7453), MP3(180, 8001),UNNOT(-1,-1);
     /**
      * 一个文件缓存有多少秒
      */

@@ -1,11 +1,17 @@
 package com.wuzuqing.android.mp3player;
 
+import android.database.DataSetObserver;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
+import android.widget.Spinner;
+import android.widget.SpinnerAdapter;
 import android.widget.TextView;
 
 import com.wuzuqing.android.mp3player.audioplayer.MusicPlayHelper;
@@ -16,12 +22,14 @@ import com.wuzuqing.android.mp3player.audioplayer.util.LogUtils;
 
 public class MainActivity extends AppCompatActivity {
 
-//    IPlayer MusicPlayHelper.get() = new SimpleIPlayer();
+    //    IPlayer MusicPlayHelper.get() = new SimpleIPlayer();
     private EditText vEditText, vEtIndex;
     private SeekBar vSeekBar;
     private ProgressBar progressBar;
     TextView logView;
     private TextView vTotalView, vCurrentView;
+    Spinner vSpinner;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -32,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
         vTotalView = findViewById(R.id.tvTotalTime);
         vCurrentView = findViewById(R.id.tvCurrentTime);
         progressBar = findViewById(R.id.progressBar);
+        vSpinner = findViewById(R.id.urls);
         logView = findViewById(R.id.log);
         MusicPlayHelper.get().bindSeekBar(vSeekBar);
         MusicPlayHelper.get().setOnStateChangeListener(new OnStateChangeListener() {
@@ -51,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         setUrlToView(DataUtils.urls[0]);
-        MusicPlayHelper.get().setOnProgressChangeListener(vOnProgressChangeListener,true);
+        MusicPlayHelper.get().setOnProgressChangeListener(vOnProgressChangeListener, true);
 //        PlayerProgressManager.get().bindTextView((TextView) findViewById(R.id.tvCurrentTime), (TextView) findViewById(R.id.tvTotalTime));
 
         LogUtils.setvOnLogChangeListener(new LogUtils.OnLogChangeListener() {
@@ -63,6 +72,20 @@ public class MainActivity extends AppCompatActivity {
                         logView.setText(log);
                     }
                 });
+            }
+        });
+        ArrayAdapter adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, android.R.id.text1, DataUtils.urls);
+        vSpinner.setAdapter(adapter);
+        vSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String url = DataUtils.urls[position % DataUtils.urls.length];
+                setUrlToView(url);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
             }
         });
         PermissionUtil permissionUtil = new PermissionUtil(this);
@@ -82,18 +105,10 @@ public class MainActivity extends AppCompatActivity {
     };
 
     public void start(View view) {
-        int index = Integer.valueOf(vEtIndex.getText().toString());
-        String url = DataUtils.urls[index % DataUtils.urls.length];
-        MusicPlayHelper.get().playUrl(url);
-        setUrlToView(url);
-//        vTestMediaPlayer.playOne( new File(Environment.getExternalStorageDirectory(),"/cacheAac/a_0_180.mp3").getAbsolutePath());
-//
-//        vEditText.postDelayed(new Runnable() {
-//            @Override
-//            public void run() {
-//                vTestMediaPlayer.playTwo( new File(Environment.getExternalStorageDirectory(),"/cacheAac/a_1_180.mp3").getAbsolutePath());
-//            }
-//        },1000);
+//        int index = Integer.valueOf(vEtIndex.getText().toString());
+//        String url = DataUtils.urls[index % DataUtils.urls.length];
+//        setUrlToView(url);
+        MusicPlayHelper.get().playUrl(vEditText.getText().toString().trim());
     }
 
     private void setUrlToView(String url) {
@@ -137,7 +152,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        MusicPlayHelper.get().setOnProgressChangeListener(vOnProgressChangeListener,false);
+        MusicPlayHelper.get().setOnProgressChangeListener(vOnProgressChangeListener, false);
     }
 
     public void clearFile(View view) {

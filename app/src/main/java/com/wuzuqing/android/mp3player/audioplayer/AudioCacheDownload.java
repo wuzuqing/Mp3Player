@@ -12,9 +12,11 @@ import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -44,7 +46,7 @@ public class AudioCacheDownload {
     private File cacheFileDir;
     private static AudioCacheDownload instance = new AudioCacheDownload();
 
-    private Queue<DownloadTask> vDownloadTasks;
+    private LinkedBlockingDeque<DownloadTask> vDownloadTasks;
 
     public static AudioCacheDownload getInstance() {
         return instance;
@@ -64,7 +66,7 @@ public class AudioCacheDownload {
             }
         });
         mOkHttpClient = builder.build();
-
+        mOkHttpClient.dispatcher().setMaxRequestsPerHost(3);
 
         vDownloadTasks = new LinkedBlockingDeque<>();
         cachedThreadPool = Executors.newCachedThreadPool();
@@ -138,7 +140,7 @@ public class AudioCacheDownload {
             rangeInfoList.put(i, rangeInfo);
         }
         audioInfo.setRangeInfoList(rangeInfoList);
-        LogUtils.d("duration:" + duration + " splitCount:" + splitCount +  "\nurl:" + url);
+        LogUtils.d("duration:" + duration + " splitCount:" + splitCount + "\nurl:" + url);
     }
 
 
@@ -207,7 +209,11 @@ public class AudioCacheDownload {
             int readOneFrame = stream.read(bytes);
             totalLength = readOneFrame;
             printBytes(bytes);
-            int firstIndex = findFirstIndex(bytes, audioInfo.getHeadBytesStr());
+            int firstIndex = rangeInfo.getFirstIndex();
+            if (rangeInfo.getFirstIndex() == -2) {
+                firstIndex = findFirstIndex(bytes, audioInfo.getHeadBytesStr());
+                rangeInfo.setFirstIndex(firstIndex);
+            }
             if (isAndroid) {
                 int offset = firstIndex == -1 ? 0 : firstIndex;
                 fileOutputStream.write(bytes, offset, readOneFrame - offset);
@@ -374,7 +380,9 @@ public class AudioCacheDownload {
         if (!vDownloadTasks.isEmpty()) {
             isRunning = true;
             DownloadTask task = vDownloadTasks.poll();
-            cachedThreadPool.execute(task);
+            if (task != null) {
+                cachedThreadPool.execute(task);
+            }
         } else {
             isRunning = false;
         }
@@ -392,7 +400,7 @@ public class AudioCacheDownload {
                 return;
             }
             listener.onLoading();
-            vDownloadTasks.add(new DownloadTask(audioInfo, index, listener));
+            vDownloadTasks.addFirst(new DownloadTask(audioInfo, index, listener));
             if (!isRunning) {
                 doWork();
             }

@@ -317,7 +317,9 @@ public class LargeAudioPlayer implements IPlayer {
         @Override
         public void onFinish(AudioInfo audioInfo, RangeInfo rangeInfo) {
             //开始播放
-            startWithOffset(AudioCacheDownload.getInstance().getRangeInfoFileName(rangeInfo), seekToPos);
+            if (currentIndex==rangeInfo.getIndex()){
+                startWithOffset(AudioCacheDownload.getInstance().getRangeInfoFileName(rangeInfo), seekToPos);
+            }
         }
 
         @Override

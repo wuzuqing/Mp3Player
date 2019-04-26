@@ -10,20 +10,29 @@
     <EditText
         android:id="@+id/et_length"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:textSize="11sp"
+        android:layout_height="48dp"
         android:hint="网络链接"
-        android:text="7456839" />
+        android:text="7456\n839" />
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
         android:orientation="horizontal">
 
+        <Spinner
+            android:layout_width="0dp"
+            android:id="@+id/urls"
+            android:layout_weight="1"
+            android:layout_height="match_parent">
+
+        </Spinner>
         <EditText
             android:id="@+id/et_index"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:visibility="gone"
             android:layout_weight="1"
+            android:layout_height="wrap_content"
             android:gravity="center"
             android:inputType="number"
             android:text="0" />

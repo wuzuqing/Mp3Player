@@ -14,7 +14,6 @@ public class DataUtils {
 
 
     public static String[] urls = {
-            "https://nl.ggwan.com/audio/warmflow/a.mp3",
             "https://nl.ggwan.com/audio/warmflow/0_20190215143623023.aac" //[-1, -15, 76, 64, 19, -30, 96, 1]
             , "https://nl.ggwan.com/audio/warmflow/0_20190222120225763.aac"
             , "https://nl.ggwan.com/audio/warmflow/0_20190222144925585.aac"
@@ -23,6 +22,7 @@ public class DataUtils {
             , "https://nl.ggwan.com/audio/warmflow/0_20190222141053895.aac"
             , "https://nl.ggwan.com/audio/warmflow/0_20190222125935922.aac"
             , "https://nl.ggwan.com/audio/warmflow/0_20190222120039525.aac"
+            ,"https://nl.ggwan.com/audio/warmflow/a.mp3"
             , "https://nl.ggwan.com/audio/warmflow/0_20190222115107936.aac"
     };
     public static String[] lengths = {

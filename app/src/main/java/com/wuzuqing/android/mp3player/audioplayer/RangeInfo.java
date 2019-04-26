@@ -25,7 +25,15 @@ public class RangeInfo {
      */
     private long to;
     private boolean isEnd;
+    private int firstIndex = -2;
 
+    public int getFirstIndex() {
+        return firstIndex;
+    }
+
+    public void setFirstIndex(int firstIndex) {
+        this.firstIndex = firstIndex;
+    }
 
     public String getFileName() {
         return fileName;
