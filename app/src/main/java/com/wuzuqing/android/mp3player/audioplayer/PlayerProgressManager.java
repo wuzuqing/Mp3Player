@@ -103,7 +103,7 @@ public class PlayerProgressManager {
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                if (isTouchSeekBar && seekBar.getMax() > 0 && Math.abs(touchPos - seekBar.getProgress()) > 3000) {
+                if (isTouchSeekBar && seekBar.getMax() > 0 && Math.abs(touchPos - seekBar.getProgress()) > IMusicConfig.STOP_TRACKING_TOUCH_RANGE) {
                     mPlayer.seekTo(seekBar.getProgress());
                 }
                 isTouchSeekBar = false;

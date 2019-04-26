@@ -96,15 +96,10 @@ public class AudioFileHeader {
                 ", sampleRate=" + sampleRate +
                 ", channelconfig=" + channelconfig +
                 ", channelValue=" + channelValue +
-//                ", original=" + original +
-//                ", home=" + home +
-//                ", copyrightedStream=" + copyrightedStream +
-//                ", copyrightStart=" + copyrightStart +
                 ", bitrate_index=" + bitrate_index +
                 ", bitrate_value=" + bitrate_value +
                 ", frameLength=" + frameLength +
                 ", bufferFullness=" + bufferFullness +
-//                ", numAacFramesPerAdtsFrame=" + numAacFramesPerAdtsFrame +
                 '}';
     }
 }

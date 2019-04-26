@@ -1,12 +1,6 @@
 package com.wuzuqing.android.mp3player.audioplayer;
 
 
-import com.wuzuqing.android.mp3player.audioplayer.util.AACHeadHelper;
-import com.wuzuqing.android.mp3player.audioplayer.util.LogUtils;
-import com.wuzuqing.android.mp3player.audioplayer.util.MP3HeadHelper;
-
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 
 public class AudioInfo {
@@ -47,7 +41,7 @@ public class AudioInfo {
      */
     private boolean isInit;
 
-    private  AudioFileHeader audioFileHeader = null;
+    private AudioFileHeader audioFileHeader = null;
 
     public AudioInfo() {
 
@@ -77,50 +71,14 @@ public class AudioInfo {
         this.headBytesStr = headBytesStr;
     }
 
-    /**
-     * 初始化内容
-     *
-     * @param bytes
-     * @param contentLength
-     */
-    public void init(byte[] bytes, long contentLength) {
-        if (isInit) {
-            return;
-        }
-        isInit = true;
-        float duration = 0f;
-        setContentLength(contentLength);
 
-        if (vMediaType == MediaType.AAC) {
-            String name = url.substring(url.lastIndexOf("_") + 1, url.lastIndexOf("."));
-            finishFileName = String.format("%s_over.aac", name);
-            audioFileHeader = AACHeadHelper.readADTSHeader(bytes);
-            duration = (contentLength * (1024000f / audioFileHeader.sampleRate) / audioFileHeader.frameLength)/1000;
-            headBytesStr = Arrays.copyOf(bytes, 4);
-        } else if (vMediaType == MediaType.MP3) {
-            String name = url.substring(url.lastIndexOf("/") + 1, url.lastIndexOf("."));
-            finishFileName = String.format("%s_over.mp3", name);
-            audioFileHeader = MP3HeadHelper.readADTSHeader(bytes);
-            duration = (contentLength * 8f / audioFileHeader.getBitrate_value());
-            headBytesStr = bytes;
-        }
-        LogUtils.d("AudioFileHeader:" + audioFileHeader);
-        setUrl(url);
-
-        splitCount = (int) Math.ceil(duration / vMediaType.getOneFileCacheSecond());
-        this.duration = (int) (duration * 1000);
-        rangeInfoList = new HashMap<>(splitCount);
-        for (int i = 0; i < splitCount; i++) {
-            RangeInfo rangeInfo = new RangeInfo();
-            rangeInfo.init(finishFileName, i, vMediaType);
-            if (i == splitCount - 1) {
-                rangeInfo.setTo(contentLength);
-            }
-            rangeInfoList.put(i, rangeInfo);
-        }
-        LogUtils.d("duration:" + duration + " splitCount:" + splitCount + Arrays.toString(headBytesStr) + " url:" + url);
+    public AudioFileHeader getAudioFileHeader() {
+        return audioFileHeader;
     }
 
+    public void setAudioFileHeader(AudioFileHeader audioFileHeader) {
+        this.audioFileHeader = audioFileHeader;
+    }
 
     public Map<Integer, RangeInfo> getRangeInfoList() {
         return rangeInfoList;
@@ -133,6 +91,11 @@ public class AudioInfo {
 
     public void setUrl(String url) {
         this.url = url;
+    }
+
+
+    public void setRangeInfoList(Map<Integer, RangeInfo> rangeInfoList) {
+        this.rangeInfoList = rangeInfoList;
     }
 
     public String getFinishFileName() {

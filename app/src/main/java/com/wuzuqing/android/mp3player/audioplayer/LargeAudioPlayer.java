@@ -156,7 +156,7 @@ public class LargeAudioPlayer implements IPlayer {
             isPrepared = false;
             PlayerProgressManager.get().pause();
             _innerCallNewState(PlayState.STOP);
-            PlayerProgressManager.get().setViewZero();
+//            PlayerProgressManager.get().setViewZero();
         }
         lastUrl = null;
     }
@@ -167,10 +167,15 @@ public class LargeAudioPlayer implements IPlayer {
         PlayerProgressManager.get().setMax(0);
         playWithPos(url, -1);
     }
-
+    private long userClickSeekToTime;
     public void seekToWithOffset(boolean isAdd, int offset) {
         LogUtils.d("seekToWithOffset:" + offset);
+        long now = System.currentTimeMillis();
+        if (userClickSeekToTime+IMusicConfig.USER_CLICK_SEEK_TO_TIME>now){
+            return;
+        }
         if (isPrepared && vCurrentMediaPlayer != null) {
+            userClickSeekToTime = now;
             int currentPosition = vCurrentMediaPlayer.getCurrentPosition();
             int realPosition = currentIndex * oneFileDuration + currentPosition;
             if (isAdd) {
@@ -180,6 +185,11 @@ public class LargeAudioPlayer implements IPlayer {
             } else {
                 realPosition -= offset;
                 realPosition = realPosition < 0 ? 0 : realPosition;
+            }
+            //剩余2秒,结束
+            if (realPosition+IMusicConfig.STOP_TRACKING_TOUCH_RANGE>=getDuration()){
+                end();
+                return;
             }
             if (hasNextPrepared) {
                 hasNextPrepared = false;
@@ -267,6 +277,11 @@ public class LargeAudioPlayer implements IPlayer {
         }
         LogUtils.d(" innerStartToDownload seekToPos:" + seekToPos + " pos:" + pos + " currentIndex:" + currentIndex);
         download(currentIndex, vOnAudioFileDownloadListener);
+    }
+
+    private void end() {
+        stop();
+        PlayerProgressManager.get().setDurationStr(getDuration());
     }
 
 
@@ -365,7 +380,7 @@ public class LargeAudioPlayer implements IPlayer {
             isLoadEnd = true;
             return;
         }
-        if (!isLoadEnd && !hasDownloadNext && position + 12000 > duration) {
+        if (!isLoadEnd && !hasDownloadNext && position + IMusicConfig.NEXT_FILE_LOAD_TIME > duration) {
             hasDownloadNext = true;
             int nextIndex = currentIndex + 1;
             hasNextDownloadFinishFile = false;

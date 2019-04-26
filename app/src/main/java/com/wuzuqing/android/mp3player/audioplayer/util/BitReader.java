@@ -12,7 +12,6 @@ public class BitReader {
 
     public BitReader(byte[] buffer) {
         this.buffer = buffer;
-        LogUtils.d("BitReader:"+Arrays.toString(buffer));
     }
 
     public int readBits(int i) {

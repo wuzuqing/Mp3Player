@@ -89,7 +89,7 @@ public interface IPlayer {
     void setOnStateChangeListener(OnStateChangeListener listener);
 
     /**
-     * 用于边下边播，检查是需要下载下一段视频
+     * 用于边下边播，检查是需要下载下一段音频
      *
      * @param progress
      */

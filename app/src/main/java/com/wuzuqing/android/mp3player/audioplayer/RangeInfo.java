@@ -1,9 +1,6 @@
 package com.wuzuqing.android.mp3player.audioplayer;
 
 
-import java.util.Locale;
-
-
 /**
  * 作者：士元
  * 时间：2019/2/23 14:43
@@ -27,11 +24,7 @@ public class RangeInfo {
      * 下载的结束索引
      */
     private long to;
-
-    /**
-     * 上一个文件的遗留尾部，目前只有AAC格式使用
-     */
-    private String preDefectFileName;
+    private boolean isEnd;
 
 
     public String getFileName() {
@@ -63,14 +56,6 @@ public class RangeInfo {
         to = from + oneFileTotalSize;
     }
 
-    public String getPreDefectFileName() {
-        return preDefectFileName;
-    }
-
-    public void setPreDefectFileName(String preDefectFileName) {
-        this.preDefectFileName = preDefectFileName;
-    }
-
     public long getTo() {
         return to;
     }
@@ -79,28 +64,24 @@ public class RangeInfo {
         this.to = to;
     }
 
-    /**
-     * 初始化
-     *
-     * @param name
-     * @param index
-     * @param mediaType
-     */
-    public void init(String name, int index, MediaType mediaType) {
-        this.index = index;
-        setFrom(index * mediaType.getOneFileTotalSize() + index, mediaType.getOneFileTotalSize());
-        fileName = name.replace("over", String.format(Locale.getDefault(), "%d_%d", index, mediaType.getOneFileCacheSecond()));
-        preDefectFileName = name.replace("over", String.format(Locale.getDefault(), "preDefect_%d_%d", index, mediaType.getOneFileCacheSecond()));
-    }
-
-
     @Override
     public String toString() {
         return "RangeInfo{" +
-//                "fileName='" + fileName + '\'' +
                 ", index=" + index +
                 ", from=" + from +
                 ", to=" + to +
                 '}';
+    }
+
+    public void setEnd(boolean end) {
+        isEnd = end;
+    }
+
+    public boolean getEnd() {
+        return isEnd;
+    }
+
+    public boolean isNotEnd() {
+         return !isEnd;
     }
 }
