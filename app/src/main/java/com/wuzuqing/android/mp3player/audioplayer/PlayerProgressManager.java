@@ -61,12 +61,16 @@ public class PlayerProgressManager {
 
     }
 
-    private void setProgressStr(int currentPosition) {
+    public void setProgressStr(int currentPosition) {
         if (!isTouchSeekBar) {
             if (vSeekBar != null) {
                 vSeekBar.setProgress(currentPosition);
             }
+            _seekBarChangeProgress(true, currentPosition);
         }
+    }
+
+    private void _seekBarChangeProgress(boolean needCheck, int currentPosition) {
         String toTimeStr = posToTimeStr(currentPosition);
         if (vCurrentTextView != null) {
             vCurrentTextView.setText(posToTimeStr(currentPosition));
@@ -76,7 +80,9 @@ public class PlayerProgressManager {
             while (iterator.hasNext()) {
                 OnProgressChangeListener next = iterator.next();
                 next.changeProgress(currentPosition, toTimeStr);
-                mPlayer.notifyProgress(currentPosition);
+                if (needCheck) {
+                    mPlayer.notifyProgress(currentPosition);
+                }
             }
         }
     }
@@ -93,6 +99,7 @@ public class PlayerProgressManager {
 
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                _seekBarChangeProgress(false, progress);
             }
 
             @Override
@@ -103,16 +110,16 @@ public class PlayerProgressManager {
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                if (isTouchSeekBar && seekBar.getMax() > 0 && Math.abs(touchPos - seekBar.getProgress()) > IMusicConfig.STOP_TRACKING_TOUCH_RANGE) {
+                isTouchSeekBar = false;
+                if (seekBar.getMax() > 0 && Math.abs(touchPos - seekBar.getProgress()) > IMusicConfig.STOP_TRACKING_TOUCH_RANGE) {
                     mPlayer.seekTo(seekBar.getProgress());
                 }
-                isTouchSeekBar = false;
             }
         });
     }
 
     public void setDurationStr(int pos) {
-        LogUtils.d("setDurationStr:"+pos);
+        LogUtils.d("setDurationStr:" + pos);
         String toTimeStr = posToTimeStr(pos);
         if (vTotalTextView != null) {
             vTotalTextView.setText(toTimeStr);
@@ -159,9 +166,9 @@ public class PlayerProgressManager {
     }
 
     public void prepared(int offset) {
-        if (mPlayer==null) return;
+        if (mPlayer == null) return;
         if (vSeekBar != null) {
-            if (vSeekBar.getMax() == offset){
+            if (vSeekBar.getMax() == offset) {
                 return;
             }
             vSeekBar.setMax(mPlayer.getDuration());
