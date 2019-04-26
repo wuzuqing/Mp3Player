@@ -312,6 +312,28 @@ public class AudioCacheDownload {
 
     }
 
+    public void clearCacheFile() {
+        if (cacheFileDir != null ) {
+           deleteDirWithFile(cacheFileDir,false);
+           LogUtils.d("deleteDirWithFile success");
+        }
+    }
+
+    public static void deleteDirWithFile(File dir, boolean isDeleteSelf) {
+        if (dir == null || !dir.exists() || !dir.isDirectory()) {
+            return;
+        }
+        for (File file : dir.listFiles()) {
+            if (file.isFile()) {
+                file.delete(); // 删除所有文件
+            } else if (file.isDirectory()) {
+                deleteDirWithFile(file, isDeleteSelf); // 递规的方式删除文件夹
+            }
+        }
+        if (isDeleteSelf) {
+            dir.delete();// 删除目录本身
+        }
+    }
 
     private static class DownloadTask implements Runnable {
         private AudioInfo audioInfo;

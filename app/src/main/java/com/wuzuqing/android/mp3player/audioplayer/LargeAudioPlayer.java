@@ -164,16 +164,15 @@ public class LargeAudioPlayer implements IPlayer {
 
     public void playUrl(String url) {
         currentIndex = 0;
-        PlayerProgressManager.get().setMax(0);
         playWithPos(url, -1);
     }
     private long userClickSeekToTime;
     public void seekToWithOffset(boolean isAdd, int offset) {
-        LogUtils.d("seekToWithOffset:" + offset);
         long now = System.currentTimeMillis();
         if (userClickSeekToTime+IMusicConfig.USER_CLICK_SEEK_TO_TIME>now){
             return;
         }
+        LogUtils.d("seekToWithOffset:" + offset);
         if (isPrepared && vCurrentMediaPlayer != null) {
             userClickSeekToTime = now;
             int currentPosition = vCurrentMediaPlayer.getCurrentPosition();

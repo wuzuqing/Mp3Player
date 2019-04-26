@@ -58,6 +58,12 @@
             android:layout_height="wrap_content"
             android:onClick="stop"
             android:text="结束" />
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="clearFile"
+            android:text="删除缓存文件" />
     </LinearLayout>
     <SeekBar
         android:id="@+id/seekTo"

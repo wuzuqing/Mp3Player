@@ -106,4 +106,8 @@ public class MusicPlayHelper implements IPlayer {
             PlayerProgressManager.get().unRegisterOnProgressChangeListener(listener);
         }
     }
+
+    public void clearCacheFile() {
+        AudioCacheDownload.getInstance().clearCacheFile();
+    }
 }

@@ -139,4 +139,8 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         MusicPlayHelper.get().setOnProgressChangeListener(vOnProgressChangeListener,false);
     }
+
+    public void clearFile(View view) {
+        MusicPlayHelper.get().clearCacheFile();
+    }
 }
